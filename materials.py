@@ -64,11 +64,11 @@ def epsilon_f(properties, wn):
     wlo_pa = properties['wlo_pa']
     eps_inf_pe = properties['eps_inf_pe']
     eps_inf_pa = properties['eps_inf_pa']
-    gam = properties['gam']
+    gamma = properties['gamma']
     eps = np.zeros((len(wn),3,3),dtype=complex)
-    eps[:,0,0] = eps_1_osc(wn,wlo_pe,wto_pe,eps_inf_pe,gam)
-    eps[:,1,1] = eps_1_osc(wn,wlo_pe,wto_pe,eps_inf_pe,gam)
-    eps[:,2,2] = eps_1_osc(wn,wlo_pa,wto_pa,eps_inf_pa,gam)
+    eps[:,0,0] = eps_1_osc(wn,wlo_pe,wto_pe,eps_inf_pe,gamma)
+    eps[:,1,1] = eps_1_osc(wn,wlo_pe,wto_pe,eps_inf_pe,gamma)
+    eps[:,2,2] = eps_1_osc(wn,wlo_pa,wto_pa,eps_inf_pa,gamma)
     
     return eps
 
@@ -93,10 +93,10 @@ def mu_f(properties, wn):
         crystal c-axis is parallel to the third dimension
 
     """
-    mu = np.zeros((len(wn),3,3),dtype=complex)
-    mu[:,0,0] = 1
-    mu[:,1,1] = 1
-    mu[:,2,2] = 1
+    mu = np.zeros((3,3),dtype=complex)
+    mu[0,0] = 1
+    mu[1,1] = 1
+    mu[2,2] = 1
     
     return mu  
 
@@ -129,9 +129,9 @@ def properties(mat):
     else:
         props = dict()
         if mat == 'vac':
-            props['betac'] = 1/speed_of_light
-            props['betal'] = 1/speed_of_light
-            props['betat'] = 1/speed_of_light
+            props['beta_c'] = 1/speed_of_light
+            props['beta_l'] = 1/speed_of_light
+            props['beta_t'] = 1/speed_of_light
             props['rho'] = 1
             props['eps_inf_pe'] = 1
             props['eps_inf_pa'] = 1
@@ -139,11 +139,11 @@ def properties(mat):
             props['eps_0_pa'] = 1
             props['wto_pe'] = 0
             props['wto_pa'] = 0
-            props['gam'] = 0
+            props['gamma'] = 0
         if mat == 'SiC3C':
-            props['betac'] = 4e3/speed_of_light
-            props['betal'] = 9e3/speed_of_light
-            props['betat'] = 2e3/speed_of_light
+            props['beta_c'] = 1j*4e3/speed_of_light
+            props['beta_l'] = 0.1j*9e3/speed_of_light
+            props['beta_t'] = 1j*2e3/speed_of_light
             props['rho'] = 3.21
             props['eps_inf_pa'] = 6.52
             props['eps_inf_pe'] = 6.52
@@ -151,7 +151,7 @@ def properties(mat):
             props['eps_0_pe'] = 9.7
             props['wto_pa'] = 797.5
             props['wto_pe'] = 797.5
-            props['gam'] = 4
+            props['gamma'] = 4
         
     props['wlo_pa'] = props['wto_pa']*np.sqrt(props['eps_0_pa']/props['eps_inf_pa'])
     props['wlo_pe'] = props['wto_pe']*np.sqrt(props['eps_0_pe']/props['eps_inf_pe'])
