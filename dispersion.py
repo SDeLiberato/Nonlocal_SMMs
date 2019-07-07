@@ -6,7 +6,7 @@ from materials import epsilon_f, mu_f, properties
 
 def layer_dispersion(kx, wn, mat, ang=None):
     """ Calculates the dispersion of the photonic and longitudinal and transverse
-    phonon eigenmodes of an anisotropic medium, describable by a diagonal 
+    phonon eigenmodes of an anisotropic medium, describable by a diagonal
     permeability and permitivitty
 
     Parameters
@@ -28,9 +28,13 @@ def layer_dispersion(kx, wn, mat, ang=None):
     Returns
     -------
 
-    qz : array
+    eigs : array
         Values representing calculated out-of-plane wavevectors of the eigenmodes
         of the layer.
+
+    fields : array
+        Values representing the calculated field components corresponding to the
+        eigenmodes of the layer
 
 
     References
@@ -46,14 +50,14 @@ def layer_dispersion(kx, wn, mat, ang=None):
         kx = np.array(kx)
     if type(wn) != np.ndarray:
         wn = np.array(wn)
-    
+
     ### Checks for equal length inputs, assumed to correspond to a cut through
     ### (kx, wn) space
     if len(kx)==len(wn):
         arr = np.transpose(np.array([wn,kx]))
-    else: 
+    else:
         arrays = [(wn), (kx)]
-        arr = np.array(list(product(*arrays)))        
+        arr = np.array(list(product(*arrays)))
 
     zeta = arr[:,1]/arr[:,0]
     ### Checks for an input angle, if present recalculates zeta
@@ -80,7 +84,7 @@ def layer_dispersion(kx, wn, mat, ang=None):
     eps_inf = np.diag(
             [eps_inf_pe, eps_inf_pe, eps_inf_pa]
         )
-        
+
     alpha = np.diag(
             [np.sqrt(eps_0_pe-eps_inf_pe)*wto_pe,
             np.sqrt(eps_0_pe-eps_inf_pe)*wto_pe,
@@ -109,7 +113,7 @@ def layer_dispersion(kx, wn, mat, ang=None):
     Bt[:,2,4] = - zeta*(beta_l**2-2*beta_t**2+beta_c**2/2)*2/beta_c**2
     Bt[:,4,0] = - zeta*alpha[2,2]/np.sqrt(4*np.pi)/(zeta**2-eps_inf[2,2]*mu[1,1])/beta_l**2/arr[:,0]**2
     Bt[:,4,0] =  zeta*alpha[2,2]/np.sqrt(4*np.pi)/(zeta**2-eps_inf[2,2]*mu[1,1])/beta_l**2/arr[:,0]**2
-    Bt[:,4,2] = - zeta*(beta_l**2-2*beta_t**2+beta_c**2/2)/beta_l**2        
+    Bt[:,4,2] = - zeta*(beta_l**2-2*beta_t**2+beta_c**2/2)/beta_l**2
 
     Ct = np.zeros_like(It, dtype=complex)
     Ct[:,0,0] = eps_inf[0,0]
@@ -125,11 +129,11 @@ def layer_dispersion(kx, wn, mat, ang=None):
     Ct[:,4,4] = 1 + 1j*gamma/arr[:,0] - wto_pa**2/arr[:,0]**2 + zeta**2*beta_c**2/2
     Ct[:,3,3] = 1 + 1j*gamma/arr[:,0] - wto_pe**2/arr[:,0]**2 - zeta**2*beta_c**2/2
     Ct[:,4,4] = 1 + 1j*gamma/arr[:,0] - wto_pa**2/arr[:,0]**2 - zeta**2*beta_c**2/2
-        
+
     M1 = -np.concatenate((
         np.hstack((Zt, It)),
         np.hstack((At, Bt))
-        ), axis=2)  
+        ), axis=2)
     M2 = np.concatenate((
         np.hstack((Ct, Zt)),
         np.hstack((Zt, -It))
@@ -139,9 +143,11 @@ def layer_dispersion(kx, wn, mat, ang=None):
     eigs, fields = np.linalg.eig(Mf)
 
     ### Order the calculated eigenvectors
+    fields[np.arange(np.shape(eigs)[0])[:,np.newaxis], np.argsort(eigs), :]
     eigs = eigs[np.arange(np.shape(eigs)[0])[:,np.newaxis], np.argsort(eigs)]
     ### Reshape into a useable array
     eigs = eigs[:,:].reshape((len(kx), len(wn),10), order='F')
-    return eigs#[::nkx]
+    fields = fields[:,:].reshape((len(kx), len(wn),10, 10), order='F')
+    return eigs, fields
 
 
