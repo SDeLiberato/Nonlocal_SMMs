@@ -71,29 +71,6 @@ def layer_dispersion(kx, wn, material, ang=None):
 
     layer = media(material, props, wn)
 
-    # eps_inf_pe, eps_inf_pa = props['eps_inf_pe'], props['eps_inf_pa']
-    # eps_0_pe, eps_0_pa = props['eps_0_pe'], props['eps_0_pa']
-    # wto_pe, wto_pa = props['wto_pe'], props['wto_pa']
-    # gamma = props['gamma']
-    # beta_t, beta_l, beta_c = props['beta_t'], props['beta_l'], props['beta_c']
-
-    # ## Calculates the permitivitty and permeability tensors
-    # eps = epsilon_f(props,arr[:,0])
-    # mu = mu_f(props,arr[:,0])
-
-    ### Creates tensors containing the high-frequency permitivitty
-    ### and oscillator strength assuming the crystal c-axis is orientated
-    ### along the third dimension
-    # eps_inf = np.diag(
-    #         [layer._eps_inf_pe, layer._eps_inf_pe, layer._eps_inf_pa]
-    #     )
-
-    # alpha = np.diag(
-    #         [np.sqrt(layer._eps_0_pe-layer._eps_inf_pe)*layer._wto_pe,
-    #         np.sqrt(layer._eps_0_pe-layer._eps_inf_pe)*layer._wto_pe,
-    #         np.sqrt(layer._eps_0_pa-layer._eps_inf_pa)*layer._wto_pa]
-    #     )
-
     ### Creates an array of len(zeta) 5 x 5 identity matrices
     It = np.identity(5)
     It = np.swapaxes(np.broadcast_to(It[...,None], (5,5,len(zeta))), 0, 2)
