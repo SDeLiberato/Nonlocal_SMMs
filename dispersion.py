@@ -2,9 +2,9 @@ __all__ = ['layer_dispersion']
 
 import numpy as np
 from itertools import product
-from materials import epsilon_f, mu_f, properties
+from materials import media, properties
 
-def layer_dispersion(kx, wn, mat, ang=None):
+def layer_dispersion(kx, wn, material, ang=None):
     """ Calculates the dispersion of the photonic and longitudinal and transverse
     phonon eigenmodes of an anisotropic medium, describable by a diagonal
     permeability and permitivitty
@@ -18,7 +18,7 @@ def layer_dispersion(kx, wn, mat, ang=None):
     wn : float or 1d array
         contains a range of frequencies to probe over
 
-    mat : string
+    material : string
         material to analyse, corresponds to an entry in ...
 
     ang : float
@@ -67,29 +67,32 @@ def layer_dispersion(kx, wn, mat, ang=None):
 
 
     ### Fetches material properties
-    props = properties(mat)
-    eps_inf_pe, eps_inf_pa = props['eps_inf_pe'], props['eps_inf_pa']
-    eps_0_pe, eps_0_pa = props['eps_0_pe'], props['eps_0_pa']
-    wto_pe, wto_pa = props['wto_pe'], props['wto_pa']
-    gamma = props['gamma']
-    beta_t, beta_l, beta_c = props['beta_t'], props['beta_l'], props['beta_c']
+    props = properties(material)
 
-    ## Calculates the permitivitty and permeability tensors
-    eps = epsilon_f(props,arr[:,0])
-    mu = mu_f(props,arr[:,0])
+    layer = media(material, props, wn)
+
+    # eps_inf_pe, eps_inf_pa = props['eps_inf_pe'], props['eps_inf_pa']
+    # eps_0_pe, eps_0_pa = props['eps_0_pe'], props['eps_0_pa']
+    # wto_pe, wto_pa = props['wto_pe'], props['wto_pa']
+    # gamma = props['gamma']
+    # beta_t, beta_l, beta_c = props['beta_t'], props['beta_l'], props['beta_c']
+
+    # ## Calculates the permitivitty and permeability tensors
+    # eps = epsilon_f(props,arr[:,0])
+    # mu = mu_f(props,arr[:,0])
 
     ### Creates tensors containing the high-frequency permitivitty
     ### and oscillator strength assuming the crystal c-axis is orientated
     ### along the third dimension
-    eps_inf = np.diag(
-            [eps_inf_pe, eps_inf_pe, eps_inf_pa]
-        )
+    # eps_inf = np.diag(
+    #         [layer._eps_inf_pe, layer._eps_inf_pe, layer._eps_inf_pa]
+    #     )
 
-    alpha = np.diag(
-            [np.sqrt(eps_0_pe-eps_inf_pe)*wto_pe,
-            np.sqrt(eps_0_pe-eps_inf_pe)*wto_pe,
-            np.sqrt(eps_0_pa-eps_inf_pa)*wto_pa]
-        )
+    # alpha = np.diag(
+    #         [np.sqrt(layer._eps_0_pe-layer._eps_inf_pe)*layer._wto_pe,
+    #         np.sqrt(layer._eps_0_pe-layer._eps_inf_pe)*layer._wto_pe,
+    #         np.sqrt(layer._eps_0_pa-layer._eps_inf_pa)*layer._wto_pa]
+    #     )
 
     ### Creates an array of len(zeta) 5 x 5 identity matrices
     It = np.identity(5)
@@ -100,35 +103,35 @@ def layer_dispersion(kx, wn, mat, ang=None):
     At = np.zeros_like(It, dtype=complex)
     Bt = np.zeros_like(It, dtype=complex)
 
-    At[:,0,0] = (zeta**2-eps_inf[2,2]*mu[0,0])/eps_inf[2,2]
-    At[:,1,1] = -mu[0,0]
-    At[:,2,2] = 2/beta_c**2
-    At[:,2,2] = -2/beta_c**2
-    At[:,3,3] = 2/beta_c**2
-    At[:,4,4] = 1/beta_l**2
-    At[:,3,3] = -2/beta_c**2
-    At[:,4,4] = -1/beta_l**2
+    At[:,0,0] = (zeta**2-layer._eps_inf[2,2]*layer._mu[0,0])/layer._eps_inf[2,2]
+    At[:,1,1] = -layer._mu[0,0]
+    At[:,2,2] = 2/layer._beta_c**2
+    At[:,2,2] = -2/layer._beta_c**2
+    At[:,3,3] = 2/layer._beta_c**2
+    At[:,4,4] = 1/layer._beta_l**2
+    At[:,3,3] = -2/layer._beta_c**2
+    At[:,4,4] = -1/layer._beta_l**2
 
-    Bt[:,0,4] = - zeta*np.sqrt(4*np.pi)*alpha[2,2]/eps_inf[2,2]
-    Bt[:,2,4] = - zeta*(beta_l**2-2*beta_t**2+beta_c**2/2)*2/beta_c**2
-    Bt[:,4,0] = - zeta*alpha[2,2]/np.sqrt(4*np.pi)/(zeta**2-eps_inf[2,2]*mu[1,1])/beta_l**2/arr[:,0]**2
-    Bt[:,4,0] =  zeta*alpha[2,2]/np.sqrt(4*np.pi)/(zeta**2-eps_inf[2,2]*mu[1,1])/beta_l**2/arr[:,0]**2
-    Bt[:,4,2] = - zeta*(beta_l**2-2*beta_t**2+beta_c**2/2)/beta_l**2
+    Bt[:,0,4] = - zeta*np.sqrt(4*np.pi)*layer._alpha[2,2]/layer._eps_inf[2,2]
+    Bt[:,2,4] = - zeta*(layer._beta_l**2-2*layer._beta_t**2+layer._beta_c**2/2)*2/layer._beta_c**2
+    Bt[:,4,0] = - zeta*layer._alpha[2,2]/np.sqrt(4*np.pi)/(zeta**2-layer._eps_inf[2,2]*layer._mu[1,1])/layer._beta_l**2/arr[:,0]**2
+    Bt[:,4,0] =  zeta*layer._alpha[2,2]/np.sqrt(4*np.pi)/(zeta**2-layer._eps_inf[2,2]*layer._mu[1,1])/layer._beta_l**2/arr[:,0]**2
+    Bt[:,4,2] = - zeta*(layer._beta_l**2-2*layer._beta_t**2+layer._beta_c**2/2)/layer._beta_l**2
 
     Ct = np.zeros_like(It, dtype=complex)
-    Ct[:,0,0] = eps_inf[0,0]
-    Ct[:,0,2] = np.sqrt(4*np.pi)*alpha[0,0]
-    Ct[:,1,1] = eps_inf[1,1] - zeta**2/mu[2,2]
-    Ct[:,1,3] = np.sqrt(4*np.pi)*alpha[1,1]
-    Ct[:,2,0] = alpha[0,0]/np.sqrt(4*np.pi)/arr[:,0]**2
-    Ct[:,2,2] = 1 + 1j*gamma/arr[:,0] - wto_pe**2/arr[:,0]**2 + zeta**2*beta_l**2
-    Ct[:,2,2] = 1 + 1j*gamma/arr[:,0] - wto_pe**2/arr[:,0]**2 - zeta**2*beta_l**2
+    Ct[:,0,0] = layer._eps_inf[0,0]
+    Ct[:,0,2] = np.sqrt(4*np.pi)*layer._alpha[0,0]
+    Ct[:,1,1] = layer._eps_inf[1,1] - zeta**2/layer._mu[2,2]
+    Ct[:,1,3] = np.sqrt(4*np.pi)*layer._alpha[1,1]
+    Ct[:,2,0] = layer._alpha[0,0]/np.sqrt(4*np.pi)/arr[:,0]**2
+    Ct[:,2,2] = 1 + 1j*layer._gamma/arr[:,0] - layer._wto_pe**2/arr[:,0]**2 + zeta**2*layer._beta_l**2
+    Ct[:,2,2] = 1 + 1j*layer._gamma/arr[:,0] - layer._wto_pe**2/arr[:,0]**2 - zeta**2*layer._beta_l**2
 
-    Ct[:,3,1] = alpha[1,1]/np.sqrt(4*np.pi)/arr[:,0]**2
-    Ct[:,3,3] = 1 + 1j*gamma/arr[:,0] - wto_pe**2/arr[:,0]**2 + zeta**2*beta_c**2/2
-    Ct[:,4,4] = 1 + 1j*gamma/arr[:,0] - wto_pa**2/arr[:,0]**2 + zeta**2*beta_c**2/2
-    Ct[:,3,3] = 1 + 1j*gamma/arr[:,0] - wto_pe**2/arr[:,0]**2 - zeta**2*beta_c**2/2
-    Ct[:,4,4] = 1 + 1j*gamma/arr[:,0] - wto_pa**2/arr[:,0]**2 - zeta**2*beta_c**2/2
+    Ct[:,3,1] = layer._alpha[1,1]/np.sqrt(4*np.pi)/arr[:,0]**2
+    Ct[:,3,3] = 1 + 1j*layer._gamma/arr[:,0] - layer._wto_pe**2/arr[:,0]**2 + zeta**2*layer._beta_c**2/2
+    Ct[:,4,4] = 1 + 1j*layer._gamma/arr[:,0] - layer._wto_pa**2/arr[:,0]**2 + zeta**2*layer._beta_c**2/2
+    Ct[:,3,3] = 1 + 1j*layer._gamma/arr[:,0] - layer._wto_pe**2/arr[:,0]**2 - zeta**2*layer._beta_c**2/2
+    Ct[:,4,4] = 1 + 1j*layer._gamma/arr[:,0] - layer._wto_pa**2/arr[:,0]**2 - zeta**2*layer._beta_c**2/2
 
     M1 = -np.concatenate((
         np.hstack((Zt, It)),
