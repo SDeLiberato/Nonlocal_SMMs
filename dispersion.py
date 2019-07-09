@@ -135,15 +135,146 @@ def layer_dispersion(kx, wn, material, ang=None):
 
     Mf = np.matmul(M1, M2)
 
-    eigs, fields = np.linalg.eig(Mf)
+    eigs, vecs = np.linalg.eig(Mf)
 
     # Order the calculated eigenvectors
     index = np.argsort(eigs)
     eigs = eigs[np.arange(np.shape(eigs)[0])[:, np.newaxis], index]
-    fields = fields[np.arange(np.shape(eigs)[0])[:, np.newaxis], :, index]
+    vecs = vecs[np.arange(np.shape(eigs)[0])[:, np.newaxis], :, index]
 
     # Reshape into a useable array
     eigs = eigs[:, :].reshape((len(kx), len(wn), 10), order='F')
-    fields = fields[:, :].reshape((len(kx), len(wn), 10, 10), order='F')
+    vecs = vecs[:, :].reshape((len(kx), len(wn), 10, 10), order='F')
 
-    return eigs, fields
+    return eigs, vecs
+
+
+def field_gen(kx, wn, eigs, vecs, material):
+    """ Takes the eigenvalues and fields calculated for a given layer and finds
+    the full vector of fields required to apply the boundary conditions
+
+    Parameters
+    ----------
+
+    kx : float or 1d array
+        contains a range of in-plane wavevectors to probe over
+
+    wn : float or 1d array
+        contains a range of frequencies to probe over
+
+    eigs : 3d array
+        contains eigenvalues outputted from layer_dispersion, corresponding to
+        the frequencies and wavevectors provided in kx, wn
+
+    vecs: 3d array
+        contains the eigenvectors outputted from layer_dispersion corresponding
+        to the frequencies and wavevectors provided in kx, wn
+
+    material : string
+        material to analyse, corresponds to an entry in ...
+
+    Outputs
+    -------
+
+    fields : 3d array
+        the full array of fields necessary to solve the boundary matching
+        problem for all kx, wn. Fields are outputted in order H, E, P, X with
+        cartesian components for each ordered x, y, z
+    """
+
+    # Checks for non-array inputs and converts to numpy arrays
+    if type(kx) != np.ndarray:
+        kx = np.array(kx)
+    if type(wn) != np.ndarray:
+        wn = np.array(wn)
+
+    # Checks for equal length inputs, assumed to correspond to a cut through
+    # (kx, wn) space
+    if len(kx) == len(wn):
+        arr = np.transpose(np.array([wn, kx]))
+        zeta = arr[:, 1]/arr[:, 0]
+    else:
+        arrays = [(wn), (kx)]
+        arr = np.array(list(product(*arrays)))
+        zeta = arr[:, 1]/arr[:, 0]
+        zeta = np.transpose(zeta.reshape((len(arrays[0]), len(arrays[1]))))
+
+    # Fetches material properties
+    props = properties(material)
+    layer = media(material, props, wn)
+
+    # Reshape input arrays for calculation
+    kx = np.transpose(arr[:, 1].reshape((len(arrays[0]), len(arrays[1]))))
+    wn = np.transpose(arr[:, 0].reshape((len(arrays[0]), len(arrays[1]))))
+
+    # layer._eps = layer._eps.reshape((len(arrays[1]), len(arrays[0]), 3, 3))
+    # Initialise empty output vector
+    field_vec = np.zeros(
+        (len(arrays[1]), len(arrays[0]), 10, 12), dtype=complex
+        )
+
+    # Fill components which pre-exist in the input
+    field_vec[:, :, :, 3] = vecs[:, :, :, 0]
+    field_vec[:, :, :, 4] = vecs[:, :, :, 1]
+    field_vec[:, :, :, 9] = vecs[:, :, :, 2]
+    field_vec[:, :, :, 10] = vecs[:, :, :, 3]
+    field_vec[:, :, :, 11] = vecs[:, :, :, 4]
+
+    # Broadcast zeta to the leading dimensions of the other arrays
+    zetaf = np.repeat(zeta[:, :, np.newaxis], 10, axis=2)
+
+    # Calculates the z-component of the electric field from Eq. in the tex file
+    field_vec[:, :, :, 5] = (
+        (
+            vecs[:, :, :, 0]*eigs*zetaf
+            + np.sqrt(4*np.pi)*layer._alpha[2, 2]*layer._mu[1, 1]
+            * vecs[:, :, :, 4]
+            )
+        / (zetaf**2-layer._eps_inf[2, 2]*layer._mu[1, 1])
+        )
+
+    # Calculates the x-component of the magnetic field from Eq. in the tex file
+    field_vec[:, :, :, 0] = -eigs*vecs[:, :, :, 1]/layer._mu[0, 0]
+
+    # Calculates the y-component of the magnetic field from Eq. in the tex file
+    field_vec[:, :, :, 1] = - (
+        (
+            vecs[:, :, :, 0]*eigs*layer._eps_inf[2, 2]
+            + np.sqrt(4*np.pi)*layer._alpha[2, 2]*layer._mu[1, 1]
+            * vecs[:, :, :, 4]*zetaf
+            )
+        / (zetaf**2-layer._eps_inf[2, 2]*layer._mu[1, 1])
+        )
+
+    # Calculates the z-component of the magnetic field from Eq. in the tex file
+    field_vec[:, :, :, 2] = zetaf*vecs[:, :, :, 1]/layer._mu[2, 2]
+
+    # Calculates the x-component of the polarisation field from Eq. in the tex
+    field_vec[:, :, :, 6] = - 1/4/np.pi*(
+        (
+            vecs[:, :, :, 0]*(
+                zetaf**2 + layer._eps_inf[2, 2]*eigs**2
+                - layer._eps_inf[2, 2]*layer._mu[1, 1]
+                )
+            + np.sqrt(4*np.pi)*layer._alpha[2, 2]*layer._mu[1, 1]
+            * vecs[:, :, :, 4]*zetaf*eigs
+            )
+        / (zetaf**2-layer._eps_inf[2, 2]*layer._mu[1, 1])
+        )
+
+    # Calculates the y-component of the polarisation field from Eq. in the tex
+    field_vec[:, :, :, 7] = - 1/4/np.pi*(
+        1 - eigs**2/layer._mu[0, 0] - zetaf**2/layer._mu[2, 2]
+        )*field_vec[:, :, :, 1]
+
+    # Calculates the z-component of the polarisation field from Eq. in the tex
+    field_vec[:, :, :, 8] = 1/4/np.pi*(
+        (
+            vecs[:, :, :, 0]*zetaf*eigs*(layer._eps_inf[2, 2] - 1)
+            + np.sqrt(4*np.pi)*layer._alpha[2, 2]*(zetaf**2 - layer._mu[1, 1])
+            * vecs[:, :, :, 4]
+            )
+        / (zetaf**2-layer._eps_inf[2, 2]*layer._mu[1, 1])
+        )
+
+    return field_vec
