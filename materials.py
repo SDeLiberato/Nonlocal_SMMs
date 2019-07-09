@@ -3,11 +3,12 @@ __all__ = ['media', 'properties']
 import numpy as np
 from scipy.constants import speed_of_light
 
+
 class media:
 
     def __init__(self, name, props, wn):
-        """ Initiates a material instance with name specified by a string and properties by
-        a dict
+        """ Initiates a material instance with name specified by a string and
+        properties by a dict
 
         Parameters
         ----------
@@ -30,17 +31,16 @@ class media:
         self._eps_inf = np.diag(
             [self._eps_inf_pe, self._eps_inf_pe, self._eps_inf_pa]
              )
-        self._alpha =  np.diag(
+        self._alpha = np.diag(
             [np.sqrt(self._eps_0_pe-self._eps_inf_pe)*self._wto_pe,
-            np.sqrt(self._eps_0_pe-self._eps_inf_pe)*self._wto_pe,
-            np.sqrt(self._eps_0_pa-self._eps_inf_pa)*self._wto_pa]
+             np.sqrt(self._eps_0_pe-self._eps_inf_pe)*self._wto_pe,
+             np.sqrt(self._eps_0_pa-self._eps_inf_pa)*self._wto_pa]
             )
 
-
     def eps_1_osc(self, wn, orientation='pe'):
-        """ Returns the dielectric function evaluated at frequencies wn, assuming a
-        1 oscillator Lorentz model of the dielectric. For materials whose phonon
-        frequencies are set to nil returns eps_inf
+        """ Returns the dielectric function evaluated at frequencies wn,
+        assuming a 1 oscillator Lorentz model of the dielectric. For materials
+        whose phonon frequencies are set to nil returns eps_inf
 
         Parameters
         ----------
@@ -49,8 +49,8 @@ class media:
             the frequencies to probe
 
         orientation : string
-            either pe or pa, determines whether the function is calculated parallel or
-            perpendicular to the crystal axis
+            either pe or pa, determines whether the function is calculated
+            parallel or perpendicular to the crystal axis
 
         Returns
         -------
@@ -70,14 +70,14 @@ class media:
                 self._eps_inf_pa, self._gamma
                 )
 
-        eps =  eps_inf*(wlo**2 - wn*(wn+1j*gam))/(wto**2 - wn*(wn+1j*gam))
+        eps = eps_inf*(wlo**2 - wn*(wn+1j*gam))/(wto**2 - wn*(wn+1j*gam))
 
         return eps
 
     def epsilon_tensor(self, wn):
         """ Returns the permittivity tensor evaluated at frequencies wn, currently
-        assuming a 1 oscillator Lorentz model of the dielectric and that the material
-        is orientated so it's c-axis is parallel to the z-direction.
+        assuming a 1 oscillator Lorentz model of the dielectric and that the
+        material is orientated so it's c-axis is parallel to the z-direction.
 
         Parameters
         ----------
@@ -92,15 +92,15 @@ class media:
         -------
 
         eps : array
-            permittivity tensor evaluated at the input frequencies wn assuming the
-            crystal c-axis is parallel to the third dimension
+            permittivity tensor evaluated at the input frequencies wn assuming
+            the crystal c-axis is parallel to the third dimension
 
         """
 
-        eps = np.zeros((len(wn),3,3),dtype=complex)
-        eps[:,0,0] = self.eps_1_osc(wn, 'pe')
-        eps[:,1,1] = self.eps_1_osc(wn, 'pe')
-        eps[:,2,2] = self.eps_1_osc(wn, 'pa')
+        eps = np.zeros((len(wn), 3, 3), dtype=complex)
+        eps[:, 0, 0] = self.eps_1_osc(wn, 'pe')
+        eps[:, 1, 1] = self.eps_1_osc(wn, 'pe')
+        eps[:, 2, 2] = self.eps_1_osc(wn, 'pa')
 
         return eps
 
@@ -121,14 +121,14 @@ class media:
         -------
 
         mu : array
-            permeability tensor evaluated at the input frequencies wn assuming the
-            crystal c-axis is parallel to the third dimension
+            permeability tensor evaluated at the input frequencies wn assuming
+            the crystal c-axis is parallel to the third dimension
 
         """
-        mu = np.zeros((3,3),dtype=complex)
-        mu[0,0] = 1
-        mu[1,1] = 1
-        mu[2,2] = 1
+        mu = np.zeros((3, 3), dtype=complex)
+        mu[0, 0] = 1
+        mu[1, 1] = 1
+        mu[2, 2] = 1
 
         return mu
 
@@ -174,18 +174,22 @@ def properties(mat):
             props['wto_pa'] = 0
             props['gamma'] = 0
         if mat == 'SiC3C':
-            props['beta_c'] = 1j*4e3/speed_of_light
-            props['beta_l'] = 1j*9e3/speed_of_light
-            props['beta_t'] = 1j*2e3/speed_of_light
+            props['beta_c'] = 4e3/speed_of_light
+            props['beta_l'] = 9e3/speed_of_light
+            props['beta_t'] = 2e3/speed_of_light
             props['rho'] = 3.21
             props['eps_inf_pa'] = 6.52
             props['eps_inf_pe'] = 6.52
             props['eps_0_pa'] = 9.7
             props['eps_0_pe'] = 9.7
             props['wto_pa'] = 797.5
-            props['wto_pe'] = 797.5
+            props['wto_pe'] = 797.5+10
             props['gamma'] = 4
 
-    props['wlo_pa'] = props['wto_pa']*np.sqrt(props['eps_0_pa']/props['eps_inf_pa'])
-    props['wlo_pe'] = props['wto_pe']*np.sqrt(props['eps_0_pe']/props['eps_inf_pe'])
+    props['wlo_pa'] = (
+        props['wto_pa']*np.sqrt(props['eps_0_pa']/props['eps_inf_pa'])
+        )
+    props['wlo_pe'] = (
+        props['wto_pe']*np.sqrt(props['eps_0_pe']/props['eps_inf_pe'])
+        )
     return props
