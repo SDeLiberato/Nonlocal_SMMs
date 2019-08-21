@@ -155,7 +155,7 @@ def properties(mat):
 
     """
 
-    mats = ['vac', 'SiC3C']
+    mats = ['vac', 'SiC3C', 'SiC4H']
     if mat not in mats:
         raise TypeError(
             "There is no data corresponding to." + mat)
@@ -174,8 +174,8 @@ def properties(mat):
             props['wto_pa'] = 0
             props['gamma'] = 0
         if mat == 'SiC3C':
-            props['beta_l'] = 9e3/speed_of_light
-            props['beta_t'] = 2e3/speed_of_light
+            props['beta_l'] = 2e4/speed_of_light
+            props['beta_t'] = 1e4/speed_of_light
             props['beta_c'] = np.sqrt(2*props['beta_t']**2)
             props['rho'] = 3.21
             props['eps_inf_pa'] = 6.52
@@ -184,6 +184,18 @@ def properties(mat):
             props['eps_0_pe'] = 9.7
             props['wto_pa'] = 797.5
             props['wto_pe'] = 797.5
+            props['gamma'] = 4
+        if mat == 'SiC4H':
+            props['beta_l'] = 2e4/speed_of_light
+            props['beta_t'] = 1e4/speed_of_light
+            props['beta_c'] = np.sqrt(2*props['beta_t']**2)
+            props['rho'] = 3.21
+            props['eps_inf_pa'] = 6.56
+            props['eps_inf_pe'] = 6.78
+            props['eps_0_pa'] = 10.109
+            props['eps_0_pe'] = 10.34
+            props['wto_pa'] = 796.6
+            props['wto_pe'] = 783.6
             props['gamma'] = 4
 
     props['wlo_pa'] = (

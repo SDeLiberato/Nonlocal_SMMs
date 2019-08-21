@@ -1,0 +1,12 @@
+{
+	"folders":
+	[
+		{
+			"path": ".",
+			"settings":
+			{
+				"SublimeLinter.linters.flake8.python": "/Users/christophergubbin/anaconda/envs/qutenv35/bin/python"
+			}
+		}
+	]
+}

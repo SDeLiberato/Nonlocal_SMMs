@@ -72,6 +72,8 @@ def layer_dispersion(kx, wn, material, ang=None):
     if ang:
         zeta[:] = np.sin(ang*np.pi/180)
 
+    zeta[:] = np.sin(80*np.pi/180)
+
     # Fetches material properties
     props = properties(material)
 
@@ -82,100 +84,96 @@ def layer_dispersion(kx, wn, material, ang=None):
     It = np.swapaxes(np.broadcast_to(It[..., None], (5, 5, len(zeta))), 0, 2)
     # Creates an array of len(zeta) 5 x 5 null matrices
     Zt = np.zeros_like(It)
-    # Creates an array of len(zeta) 5 x 5 null matrices to be filled
-    At = np.zeros_like(It, dtype=complex)
-    Bt = np.zeros_like(It, dtype=complex)
 
-    At[:, 0, 0] = (
-        layer._eps_inf[2, 2]/(zeta**2-layer._eps_inf[2, 2]*layer._mu[1, 1])
-        )
-    At[:, 1, 1] = (-1/layer._mu[0, 0])
-    At[:, 2, 2] = (layer._beta_c**2/2)
-    At[:, 3, 3] = (layer._beta_c**2/2)
-    At[:, 4, 4] = (layer._beta_l**2)
+    tAt = np.zeros_like(It, dtype=complex)
+    tBt = np.zeros_like(It, dtype=complex)
 
-    Bt[:, 0, 4] = (
-        zeta*np.sqrt(4*np.pi)*layer._alpha[2, 2]*layer._mu[1, 1]
-        / (zeta**2-layer._eps_inf[2, 2]*layer._mu[1, 1])
-        )
-    Bt[:, 2, 4] = zeta*(layer._beta_l**2-2*layer._beta_t**2+layer._beta_c**2/2)
-    Bt[:, 4, 0] = (
-        layer._alpha[2, 2]/np.sqrt(4*np.pi)*zeta
-        / (zeta**2-layer._eps_inf[2, 2]*layer._mu[1, 1])/arr[:, 0]**2
-        )
-    Bt[:, 4, 2] = zeta*(layer._beta_l**2-2*layer._beta_t**2+layer._beta_c**2/2)
+    tAt[:, 0, 0] = layer._eps_inf[0, 0]*(-zeta**2/layer._eps_inf[2, 2]+layer._mu[1, 1])
+    tAt[:, 0, 2] = layer._alpha[0, 0]*(-zeta**2/layer._eps_inf[2, 2]+layer._mu[1, 1])
 
-    Ct = np.zeros_like(It, dtype=complex)
+    tAt[:, 1, 1] = layer._mu[0, 0]*(-zeta**2/layer._mu[2, 2]+layer._eps_inf[1, 1])
+    tAt[:, 1, 3] = layer._alpha[1, 1]*layer._mu[0, 0]
 
-    Ct[:, 0, 0] = layer._eps_inf[0, 0]
-    Ct[:, 0, 2] = np.sqrt(4*np.pi)*layer._alpha[0, 0]
+    tAt[:, 2, 0] = -2*layer._alpha[0, 0]/arr[:, 0]**2/layer._beta_c**2
+    tAt[:, 2, 2] = 2*(layer._wto_pe**2
+                      - arr[:, 0]*(arr[:, 0]+1j*layer._gamma)
+                      - layer._beta_l**2*zeta**2*arr[:, 0]**2
+                      )/arr[:, 0]**2/layer._beta_c**2
+    tAt[:, 3, 1] = -2*layer._alpha[1, 1]/arr[:, 0]**2/layer._beta_c**2
+    tAt[:, 3, 3] = 2*(layer._wto_pe**2
+                      - arr[:, 0]*(arr[:, 0]+1j*layer._gamma)
+                      - 0.5*layer._beta_c**2*zeta**2*arr[:, 0]**2
+                      )/arr[:, 0]**2/layer._beta_c**2
 
-    Ct[:, 1, 1] = layer._eps_inf[1, 1] - zeta**2/layer._mu[2, 2]
-    Ct[:, 1, 3] = np.sqrt(4*np.pi)*layer._alpha[2, 2]
+    tAt[:, 4, 4] = ( (layer._wto_pa**2
+                       - arr[:, 0]*(arr[:, 0]+1j*layer._gamma)
+                       - 0.5*layer._beta_c**2*zeta**2*arr[:, 0]**2
+                       )/arr[:, 0]**2/layer._beta_l**2
+                    - (layer._alpha[2, 2]**2*layer._mu[1, 1]
+                        /arr[:, 0]**2/layer._beta_l**2
+                        /(zeta**2 - layer._eps_inf[2, 2]*layer._mu[1, 1])
+                        )
+                    )
 
-    Ct[:, 2, 0] = layer._alpha[0, 0]/np.sqrt(4*np.pi)/arr[:, 0]**2
-    Ct[:, 2, 2] = (
-        1 + 1j*layer._gamma/arr[:, 0]
-        - layer._wto_pe**2/arr[:, 0]**2 + zeta**2*layer._beta_l**2
-        )
+    tBt[:, 0, 4] = -zeta*layer._alpha[2, 2] / layer._eps_inf[2, 2]
 
-    Ct[:, 3, 1] = layer._alpha[1, 1]/np.sqrt(4*np.pi)/arr[:, 0]**2
-    Ct[:, 3, 3] = (
-        1 + 1j*layer._gamma/arr[:, 0]
-        - layer._wto_pe**2/arr[:, 0]**2 + zeta**2*layer._beta_c**2/2
-        )
-    Ct[:, 4, 4] = (
-        1 + 1j*layer._gamma/arr[:, 0]
-        - layer._wto_pa**2/arr[:, 0]**2 + zeta**2*layer._beta_c**2/2
-        + layer._alpha[2, 2]**2*layer._mu[1, 1]/arr[:, 0]**2
-        / (zeta**2-layer._eps_inf[2, 2]*layer._mu[1, 1])
-        )
+    tBt[:, 2, 4] = -2*zeta*(
+                            layer._beta_c**2/2
+                            + layer._beta_l**2
+                            - 2*layer._beta_t**2
+                            ) / layer._beta_c**2
 
-    iAt = np.zeros_like(It, dtype=complex)
-    iBt = np.zeros_like(It, dtype=complex)
+    tBt[:, 4, 0] = - layer._alpha[2, 2]*zeta/(layer._beta_l**2*arr[:, 0]**2
+                                              *(zeta**2-layer._eps_inf[2, 2]*layer._mu[1, 1])
+                                              )
 
-    iAt[:, 0, 0] = (
-        (zeta**2-layer._eps_inf[2, 2]*layer._mu[1, 1])/layer._eps_inf[2, 2]
-        )
-    iAt[:, 1, 1] = -layer._mu[0, 0]
-    iAt[:, 2, 2] = 2/layer._beta_c**2
-    iAt[:, 3, 3] = 2/layer._beta_c**2
-    iAt[:, 4, 4] = 1/layer._beta_l**2
+    tBt[:, 4, 2] = -1*zeta*(
+                            layer._beta_c**2/2
+                            + layer._beta_l**2
+                            - 2*layer._beta_t**2
+                            ) / layer._beta_l**2
 
-    iBt[:, 0, 4] = -(
-        zeta*np.sqrt(4*np.pi)*layer._alpha[2, 2]*layer._mu[1, 1]
-        / layer._eps_inf[2, 2]
-        )
-    iBt[:, 2, 4] = -zeta*(layer._beta_l**2-2*layer._beta_t**2+layer._beta_c**2/2)*(2/layer._beta_c**2/2)
-    iBt[:, 4, 0] = -(
-        layer._alpha[2, 2]/np.sqrt(4*np.pi)*zeta
-        / (zeta**2-layer._eps_inf[2, 2]*layer._mu[1, 1])/arr[:, 0]**2
-        )/layer._beta_l**2
-    iBt[:, 4, 2] = -zeta*(layer._beta_l**2-2*layer._beta_t**2+layer._beta_c**2/2)*(2/layer._beta_c**2/2)
-
-    M1 = -np.concatenate((
+    M3 = -np.concatenate((
         np.hstack((Zt, It)),
-        np.hstack((iAt, iBt))
+        np.hstack((tAt, tBt))
         ), axis=2)
 
-    M2 = np.concatenate((
-        np.hstack((Ct, Zt)),
-        np.hstack((Zt, -It))
-        ), axis=2)
+    eigs, vecs = np.linalg.eig(M3)
 
-    Mf = np.matmul(M1, M2)
-
-    eigs, vecs = np.linalg.eig(Mf)
-
-    # # Order the calculated eigenvectors
-    # index = np.argsort(eigs)
-    # eigs = eigs[np.arange(np.shape(eigs)[0])[:, np.newaxis], index]
-    # vecs = vecs[np.arange(np.shape(eigs)[0])[:, np.newaxis], :, index]
 
     # # Reshape into a useable array
     eigs = eigs.reshape((len(kx), len(wn), 10), order='F')
     vecs = vecs.reshape((len(kx), len(wn), 10, 10), order='F')
-    return eigs, vecs
+
+    ## Initial sort
+    a = -1
+    order = eigs.argsort(axis=a)
+    m, n, k = eigs.shape
+    idx = np.ogrid[:m, :n, :k]
+    idx[-1] = order
+    eigs_r = eigs[tuple(idx)]
+
+    m, n, k, o = vecs.shape
+    idx = np.ogrid[:m, :n, :k, :o]
+    order = np.repeat(order[:, :, np.newaxis, :], 10, axis=2)
+    idx[-1] = order
+    vecs_r = vecs[tuple(idx)]
+
+    eigs_ph, vecs_ph = pol_comp(eigs_r[:,:,5:7], vecs_r[:,:,:,5:7])
+    eigs_to, vecs_to = pol_comp(eigs_r[:,:,7:9], vecs_r[:,:,:,7:9])
+
+    sorted_eigs = np.concatenate((np.concatenate(
+        (eigs_ph, eigs_to), axis=2
+        ), eigs_r[:,:,-1:]), axis=2
+    )
+
+
+    sorted_vecs = np.concatenate((np.concatenate(
+        (vecs_ph, vecs_to), axis=3
+        ), vecs_r[:,:,:,-1:]), axis=3
+    )
+
+    return sorted_eigs, sorted_vecs
 
 
 def pol_comp(eigs, vecs):
