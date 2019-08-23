@@ -169,8 +169,25 @@ def layer_dispersion(wn, material, ang=None, kx=None):
         ), vecs_r[:, :, :, -1:]), axis=3
     )
 
+    # Reverse propagation
+    eigs_ph_r, vecs_ph_r = pol_comp(eigs_r[:, :, 3:5], vecs_r[:, :, :, 3:5])
+    eigs_to_r, vecs_to_r = pol_comp(eigs_r[:, :, 1:3], vecs_r[:, :, :, 1:3])
+
+    sorted_eigs_r = np.concatenate((np.concatenate(
+        (eigs_ph_r, eigs_to_r), axis=2
+        ), eigs_r[:, :, :1]), axis=2
+    )
+
+    sorted_vecs_r = np.concatenate((np.concatenate(
+        (vecs_ph_r, vecs_to_r), axis=3
+        ), vecs_r[:, :, :, :1]), axis=3
+    )
+
     if ang:
-        return sorted_eigs[0], sorted_vecs[0]
+        # return sorted_eigs[0], sorted_vecs[0], sorted_eigs_r[0], sorted_vecs_r[0]
+        eigs_out = np.concatenate([sorted_eigs[0], sorted_eigs_r[0]], axis=1)
+        vecs_out = np.concatenate([sorted_vecs[0], sorted_vecs_r[0]], axis=2)
+        return eigs_out, vecs_out
     else:
         return sorted_eigs, sorted_vecs
 
@@ -259,7 +276,7 @@ def field_gen(wn, eigs, vecs, material, ang=None, kx=None):
         wn = np.transpose(arr[:, 0].reshape((len(arrays[0]), len(arrays[1]))))
     # Initialize empty output vector
     field_vec = np.zeros(
-        (len(arrays[1]), len(arrays[0]), 5, 12), dtype=complex
+        (len(arrays[1]), len(arrays[0]), 10, 12), dtype=complex
     )
 
     # Fetches material properties
@@ -274,7 +291,7 @@ def field_gen(wn, eigs, vecs, material, ang=None, kx=None):
     field_vec[:, :, :, 11] = -vecs[:, :, 4, :]
 
     # Broadcast zeta to the leading dimensions of the other arrays
-    zetaf = np.repeat(zeta[:, :, np.newaxis], 5, axis=2)
+    zetaf = np.repeat(zeta[:, :, np.newaxis], 10, axis=2)
 
     Ex0 = vecs[:, :, 0, :]
     Ey0 = vecs[:, :, 1, :]
