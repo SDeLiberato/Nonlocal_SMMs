@@ -5,7 +5,7 @@ from itertools import product
 from materials.materials import Media, properties
 
 
-def layer_dispersion(kx, wn, material, ang=None):
+def layer_dispersion(wn, material, ang=None, kx=None):
     """ Calculates the dispersion of the photonic and longitudinal and transverse
     phonon eigenmodes of an anisotropic medium, describable by a diagonal
     permeability and permitivitty
@@ -33,9 +33,9 @@ def layer_dispersion(kx, wn, material, ang=None):
         Values representing calculated out-of-plane wavevectors of the
         eigenmodes of the layer.
 
-    fields : array
+    vecs : array
         Values representing the calculated field components corresponding to
-        the eigenmodes of the layer
+        the eigenmodes of the layer. These are in order Ex, Ey, Xx, Xy, Xz
 
 
     References
@@ -54,25 +54,23 @@ def layer_dispersion(kx, wn, material, ang=None):
     """
 
     # Checks for non-array inputs and converts to numpy arrays
-    if type(kx) != np.ndarray:
+    if kx and type(kx) != np.ndarray:
         kx = np.array(kx)
     if type(wn) != np.ndarray:
         wn = np.array(wn)
 
-    # Checks for equal length inputs, assumed to correspond to a cut through
-    # (kx, wn) space
-    if len(kx) == len(wn):
-        arr = np.transpose(np.array([wn, kx]))
+    # Checks for an input angle, if present calculates zeta using this else
+    # uses the input wavevector array
+    if ang:
+        kx = np.zeros(1)  # Creates a dummy kx to ease code maintanence below
+        arrays = [(wn), (kx)]
+        arr = np.array(list(product(*arrays)))
+        zeta = np.zeros_like(wn)
+        zeta[:] = np.sin(ang*np.pi/180)
     else:
         arrays = [(wn), (kx)]
         arr = np.array(list(product(*arrays)))
-
-    zeta = arr[:, 1]/arr[:, 0]
-    # Checks for an input angle, if present recalculates zeta
-    if ang:
-        zeta[:] = np.sin(ang*np.pi/180)
-
-    zeta[:] = np.sin(80*np.pi/180)
+        zeta = arr[:, 1]/arr[:, 0]
 
     # Fetches material properties
     props = properties(material)
@@ -140,12 +138,11 @@ def layer_dispersion(kx, wn, material, ang=None):
 
     eigs, vecs = np.linalg.eig(M3)
 
-
-    # # Reshape into a useable array
+    # Reshape into a useable array
     eigs = eigs.reshape((len(kx), len(wn), 10), order='F')
     vecs = vecs.reshape((len(kx), len(wn), 10, 10), order='F')
 
-    ## Initial sort
+    # Initial sort
     a = -1
     order = eigs.argsort(axis=a)
     m, n, k = eigs.shape
@@ -159,22 +156,23 @@ def layer_dispersion(kx, wn, material, ang=None):
     idx[-1] = order
     vecs_r = vecs[tuple(idx)]
 
-    eigs_ph, vecs_ph = pol_comp(eigs_r[:,:,5:7], vecs_r[:,:,:,5:7])
-    eigs_to, vecs_to = pol_comp(eigs_r[:,:,7:9], vecs_r[:,:,:,7:9])
+    eigs_ph, vecs_ph = pol_comp(eigs_r[:, :, 5:7], vecs_r[:, :, :, 5:7])
+    eigs_to, vecs_to = pol_comp(eigs_r[:, :, 7:9], vecs_r[:, :, :, 7:9])
 
     sorted_eigs = np.concatenate((np.concatenate(
         (eigs_ph, eigs_to), axis=2
-        ), eigs_r[:,:,-1:]), axis=2
+        ), eigs_r[:, :, -1:]), axis=2
     )
-
 
     sorted_vecs = np.concatenate((np.concatenate(
         (vecs_ph, vecs_to), axis=3
-        ), vecs_r[:,:,:,-1:]), axis=3
+        ), vecs_r[:, :, :, -1:]), axis=3
     )
 
-    return sorted_eigs, sorted_vecs
-
+    if ang:
+        return sorted_eigs[0], sorted_vecs[0]
+    else:
+        return sorted_eigs, sorted_vecs
 
 def pol_comp(eigs, vecs):
     """ Function to compare the eigenmode polarisation state
@@ -201,7 +199,7 @@ def pol_comp(eigs, vecs):
     return eigs, vecs
 
 
-def field_gen(kx, wn, eigs, vecs, material):
+def field_gen(wn, eigs, vecs, material, ang=None, kx=None):
     """ Takes the eigenvalues and fields calculated for a given layer and finds
     the full vector of fields required to apply the boundary conditions
 
@@ -235,97 +233,110 @@ def field_gen(kx, wn, eigs, vecs, material):
     """
 
     # Checks for non-array inputs and converts to numpy arrays
-    if type(kx) != np.ndarray:
+    if kx and type(kx) != np.ndarray:
         kx = np.array(kx)
     if type(wn) != np.ndarray:
         wn = np.array(wn)
 
     # Checks for equal length inputs, assumed to correspond to a cut through
     # (kx, wn) space
-    if len(kx) == len(wn):
-        arr = np.transpose(np.array([wn, kx]))
-        zeta = arr[:, 1]/arr[:, 0]
+    if ang:
+        kx = np.zeros(1)  # Creates a dummy kx to ease code maintanence below
+        arrays = [(wn), (kx)]
+        arr = np.array(list(product(*arrays)))
+        zeta = np.zeros_like(wn)
+        zeta[:] = np.sin(ang*np.pi/180)
+        vecs = np.expand_dims(vecs, axis=0)
+        eigs = np.expand_dims(eigs, axis=0)
+        zeta = np.expand_dims(zeta, axis=0)
     else:
         arrays = [(wn), (kx)]
         arr = np.array(list(product(*arrays)))
         zeta = arr[:, 1]/arr[:, 0]
         zeta = np.transpose(zeta.reshape((len(arrays[0]), len(arrays[1]))))
+        # Reshape input arrays for calculation
+        kx = np.transpose(arr[:, 1].reshape((len(arrays[0]), len(arrays[1]))))
+        wn = np.transpose(arr[:, 0].reshape((len(arrays[0]), len(arrays[1]))))
+    # Initialize empty output vector
+    field_vec = np.zeros(
+        (len(arrays[1]), len(arrays[0]), 5, 12), dtype=complex
+    )
 
     # Fetches material properties
     props = properties(material)
     layer = Media(material, props, wn)
 
-    # Reshape input arrays for calculation
-    kx = np.transpose(arr[:, 1].reshape((len(arrays[0]), len(arrays[1]))))
-    wn = np.transpose(arr[:, 0].reshape((len(arrays[0]), len(arrays[1]))))
-
-    # Initialize empty output vector
-    field_vec = np.zeros(
-        (len(arrays[1]), len(arrays[0]), 10, 12), dtype=complex
-        )
-
     # Fill components which pre-exist in the input
-    field_vec[:, :, :, 3] = vecs[:, :, :, 0]
-    field_vec[:, :, :, 4] = vecs[:, :, :, 1]
-    field_vec[:, :, :, 9] = vecs[:, :, :, 2]
-    field_vec[:, :, :, 10] = vecs[:, :, :, 3]
-    field_vec[:, :, :, 11] = vecs[:, :, :, 4]
+    field_vec[:, :, :, 3] = vecs[:, :,  0, :]
+    field_vec[:, :, :, 4] = vecs[:, :, 1, :]
+    field_vec[:, :, :, 9] = vecs[:, :, 2, :]
+    field_vec[:, :, :, 10] = vecs[:, :, 3, :]
+    field_vec[:, :, :, 11] = -vecs[:, :, 4, :]
 
     # Broadcast zeta to the leading dimensions of the other arrays
-    zetaf = np.repeat(zeta[:, :, np.newaxis], 10, axis=2)
+    zetaf = np.repeat(zeta[:, :, np.newaxis], 5, axis=2)
+
+    Ex0 = vecs[:, :, 0, :]
+    Ey0 = vecs[:, :, 1, :]
+    Xx0 = vecs[:, :, 2, :]
+    Xy0 = vecs[:, :, 3, :]
+    Xz0 = -vecs[:, :, 4, :]
 
     # Calculates the z-component of the electric field from Eq. in the tex file
     field_vec[:, :, :, 5] = (
         (
-            vecs[:, :, :, 0]*eigs*zetaf
-            + np.sqrt(4*np.pi)*layer._alpha[2, 2]*layer._mu[1, 1]
-            * vecs[:, :, :, 4]
+            Ex0*eigs*zetaf
+            + layer._alpha[2, 2]*layer._mu[1, 1]
+            * Xz0
             )
         / (zetaf**2-layer._eps_inf[2, 2]*layer._mu[1, 1])
         )
 
     # Calculates the x-component of the magnetic field from Eq. in the tex file
-    field_vec[:, :, :, 0] = -eigs*vecs[:, :, :, 1]/layer._mu[0, 0]
+    field_vec[:, :, :, 0] = -eigs*Ey0/layer._mu[0, 0]
 
     # Calculates the y-component of the magnetic field from Eq. in the tex file
-    field_vec[:, :, :, 1] = - (
+    field_vec[:, :, :, 1] = (
         (
-            vecs[:, :, :, 0]*eigs*layer._eps_inf[2, 2]
-            + np.sqrt(4*np.pi)*layer._alpha[2, 2]*layer._mu[1, 1]
-            * vecs[:, :, :, 4]*zetaf
+            Ex0*eigs*layer._eps_inf[2, 2]
+            + layer._alpha[2, 2]*layer._mu[1, 1]
+            * Xz0*zetaf
             )
         / (zetaf**2-layer._eps_inf[2, 2]*layer._mu[1, 1])
         )
 
     # Calculates the z-component of the magnetic field from Eq. in the tex file
-    field_vec[:, :, :, 2] = zetaf*vecs[:, :, :, 1]/layer._mu[2, 2]
+    field_vec[:, :, :, 2] = zetaf*Ey0/layer._mu[2, 2]
 
     # Calculates the x-component of the polarization field from Eq. in the tex
-    field_vec[:, :, :, 6] = - 1/4/np.pi*(
+    field_vec[:, :, :, 6] = - (
         (
-            vecs[:, :, :, 0]*(
+            Ex0*(
                 zetaf**2 + layer._eps_inf[2, 2]*eigs**2
                 - layer._eps_inf[2, 2]*layer._mu[1, 1]
                 )
-            + np.sqrt(4*np.pi)*layer._alpha[2, 2]*layer._mu[1, 1]
-            * vecs[:, :, :, 4]*zetaf*eigs
+            + layer._alpha[2, 2]*layer._mu[1, 1]
+            * Xz0*zetaf*eigs
             )
         / (zetaf**2-layer._eps_inf[2, 2]*layer._mu[1, 1])
         )
 
     # Calculates the y-component of the polarization field from Eq. in the tex
-    field_vec[:, :, :, 7] = - 1/4/np.pi*(
+    field_vec[:, :, :, 7] = - (
         1 - eigs**2/layer._mu[0, 0] - zetaf**2/layer._mu[2, 2]
-        )*field_vec[:, :, :, 1]
+        )*Ey0
 
     # Calculates the z-component of the polarization field from Eq. in the tex
-    field_vec[:, :, :, 8] = 1/4/np.pi*(
+    field_vec[:, :, :, 8] = (
         (
-            vecs[:, :, :, 0]*zetaf*eigs*(layer._eps_inf[2, 2] - 1)
-            + np.sqrt(4*np.pi)*layer._alpha[2, 2]*(zetaf**2 - layer._mu[1, 1])
-            * vecs[:, :, :, 4]
+            Ex0*zetaf*eigs*(layer._eps_inf[2, 2] - 1)
+            + layer._alpha[2, 2]*(zetaf**2 - layer._mu[1, 1])
+            * Xz0
             )
         / (zetaf**2-layer._eps_inf[2, 2]*layer._mu[1, 1])
         )
 
-    return field_vec
+    if ang:
+        return field_vec[0]
+    else:
+        return field_vec
