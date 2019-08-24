@@ -77,124 +77,172 @@ def layer_dispersion(wn, material, ang=None, kx=None):
 
     layer = Media(material, props, wn)
 
-    # Creates an array of len(zeta) 5 x 5 identity matrices
-    It = np.identity(5)
-    It = np.swapaxes(np.broadcast_to(It[..., None], (5, 5, len(zeta))), 0, 2)
-    # Creates an array of len(zeta) 5 x 5 null matrices
-    Zt = np.zeros_like(It)
+    if layer._beta_l == 0:
+        # Creates an array of len(zeta) 5 x 5 identity matrices
+        It = np.identity(2)
+        It = np.swapaxes(np.broadcast_to(It[..., None], (2, 2, len(zeta))), 0, 2)
+        # Creates an array of len(zeta) 5 x 5 null matrices
 
-    tAt = np.zeros_like(It, dtype=complex)
-    tBt = np.zeros_like(It, dtype=complex)
+        tAit = np.zeros_like(It, dtype=complex)
+        tAit[:, 0, 0] = (zeta**2/layer._eps_inf[2, 2]-layer._mu[1, 1])
+        tAit[:, 1, 1] = -layer._mu[0, 0]
 
-    tAt[:, 0, 0] = layer._eps_inf[0, 0]*(-zeta**2/layer._eps_inf[2, 2]+layer._mu[1, 1])
-    tAt[:, 0, 2] = layer._alpha[0, 0]*(-zeta**2/layer._eps_inf[2, 2]+layer._mu[1, 1])
+        tCt = np.zeros_like(It, dtype=complex)
+        tCt[:, 0, 0] = layer._eps_inf[0, 0]
+        tCt[:, 1, 1] = layer._eps_inf[1, 1] - zeta**2/layer._mu[2, 2]
 
-    tAt[:, 1, 1] = layer._mu[0, 0]*(-zeta**2/layer._mu[2, 2]+layer._eps_inf[1, 1])
-    tAt[:, 1, 3] = layer._alpha[1, 1]*layer._mu[0, 0]
+        fm = np.matmul(tAit, tCt)
 
-    tAt[:, 2, 0] = -2*layer._alpha[0, 0]/arr[:, 0]**2/layer._beta_c**2
-    tAt[:, 2, 2] = 2*(layer._wto_pe**2
-                      - arr[:, 0]*(arr[:, 0]+1j*layer._gamma)
-                      - layer._beta_l**2*zeta**2*arr[:, 0]**2
-                      )/arr[:, 0]**2/layer._beta_c**2
-    tAt[:, 3, 1] = -2*layer._alpha[1, 1]/arr[:, 0]**2/layer._beta_c**2
-    tAt[:, 3, 3] = 2*(layer._wto_pe**2
-                      - arr[:, 0]*(arr[:, 0]+1j*layer._gamma)
-                      - 0.5*layer._beta_c**2*zeta**2*arr[:, 0]**2
-                      )/arr[:, 0]**2/layer._beta_c**2
+        sq_eigs, vecs = np.linalg.eig(-fm)
+        eigs = np.sqrt(sq_eigs)
 
-    tAt[:, 4, 4] = ( (layer._wto_pa**2
-                       - arr[:, 0]*(arr[:, 0]+1j*layer._gamma)
-                       - 0.5*layer._beta_c**2*zeta**2*arr[:, 0]**2
-                       )/arr[:, 0]**2/layer._beta_l**2
-                    - (layer._alpha[2, 2]**2*layer._mu[1, 1]
-                        /arr[:, 0]**2/layer._beta_l**2
-                        /(zeta**2 - layer._eps_inf[2, 2]*layer._mu[1, 1])
+        eigs = eigs.reshape((len(kx), len(wn), 2), order='F')
+        vecs = vecs.reshape((len(kx), len(wn), 2, 2), order='F')
+
+        eigs_ph, vecs_ph = pol_comp(eigs[:, :, :], vecs[:, :, :, :])
+
+        ts0, ts1, ts2 = eigs_ph.shape
+        zm = np.zeros((ts0, ts1, ts2+1))
+
+        sorted_eigs = np.concatenate((eigs_ph, zm), axis=2)
+        sorted_eigs_r = np.concatenate((-eigs_ph, zm), axis=2)
+
+        ts0, ts1, ts2, ts3 = vecs_ph.shape
+        zm1 = np.zeros((ts0, ts1, ts2+6, ts3))
+        zm2 = np.zeros((ts0, ts1, ts2+8, ts3+1))
+
+        sorted_vecs = np.concatenate(
+            (np.concatenate((vecs_ph, zm1), axis=2), zm2),
+            axis=3
+        )
+        sorted_vecs_r = np.concatenate(
+            (np.concatenate((vecs_ph, zm1), axis=2), zm2),
+            axis=3
+        )
+
+    else:
+
+        # Creates an array of len(zeta) 5 x 5 identity matrices
+        It = np.identity(5)
+        It = np.swapaxes(np.broadcast_to(It[..., None], (5, 5, len(zeta))), 0, 2)
+        # Creates an array of len(zeta) 5 x 5 null matrices
+        Zt = np.zeros_like(It)
+
+        tAt = np.zeros_like(It, dtype=complex)
+        tBt = np.zeros_like(It, dtype=complex)
+
+        tAt[:, 0, 0] = layer._eps_inf[0, 0]*(-zeta**2/layer._eps_inf[2, 2]+layer._mu[1, 1])
+        tAt[:, 0, 2] = layer._alpha[0, 0]*(-zeta**2/layer._eps_inf[2, 2]+layer._mu[1, 1])
+
+        tAt[:, 1, 1] = layer._mu[0, 0]*(-zeta**2/layer._mu[2, 2]+layer._eps_inf[1, 1])
+        tAt[:, 1, 3] = layer._alpha[1, 1]*layer._mu[0, 0]
+
+        tAt[:, 2, 0] = -2*layer._alpha[0, 0]/arr[:, 0]**2/layer._beta_c**2
+        tAt[:, 2, 2] = 2*(layer._wto_pe**2
+                          - arr[:, 0]*(arr[:, 0]+1j*layer._gamma)
+                          - layer._beta_l**2*zeta**2*arr[:, 0]**2
+                          )/arr[:, 0]**2/layer._beta_c**2
+        tAt[:, 3, 1] = -2*layer._alpha[1, 1]/arr[:, 0]**2/layer._beta_c**2
+        tAt[:, 3, 3] = 2*(layer._wto_pe**2
+                          - arr[:, 0]*(arr[:, 0]+1j*layer._gamma)
+                          - 0.5*layer._beta_c**2*zeta**2*arr[:, 0]**2
+                          )/arr[:, 0]**2/layer._beta_c**2
+
+        tAt[:, 4, 4] = ( (layer._wto_pa**2
+                           - arr[:, 0]*(arr[:, 0]+1j*layer._gamma)
+                           - 0.5*layer._beta_c**2*zeta**2*arr[:, 0]**2
+                           )/arr[:, 0]**2/layer._beta_l**2
+                        - (layer._alpha[2, 2]**2*layer._mu[1, 1]
+                            /arr[:, 0]**2/layer._beta_l**2
+                            /(zeta**2 - layer._eps_inf[2, 2]*layer._mu[1, 1])
+                            )
                         )
-                    )
 
-    tBt[:, 0, 4] = -zeta*layer._alpha[2, 2] / layer._eps_inf[2, 2]
+        tBt[:, 0, 4] = -zeta*layer._alpha[2, 2] / layer._eps_inf[2, 2]
 
-    tBt[:, 2, 4] = -2*zeta*(
-                            layer._beta_c**2/2
-                            + layer._beta_l**2
-                            - 2*layer._beta_t**2
-                            ) / layer._beta_c**2
+        tBt[:, 2, 4] = -2*zeta*(
+                                layer._beta_c**2/2
+                                + layer._beta_l**2
+                                - 2*layer._beta_t**2
+                                ) / layer._beta_c**2
 
-    tBt[:, 4, 0] = - layer._alpha[2, 2]*zeta/(layer._beta_l**2*arr[:, 0]**2
-                                              *(zeta**2-layer._eps_inf[2, 2]*layer._mu[1, 1])
-                                              )
+        tBt[:, 4, 0] = - layer._alpha[2, 2]*zeta/(layer._beta_l**2*arr[:, 0]**2
+                                                  *(zeta**2-layer._eps_inf[2, 2]*layer._mu[1, 1])
+                                                  )
 
-    tBt[:, 4, 2] = -1*zeta*(
-                            layer._beta_c**2/2
-                            + layer._beta_l**2
-                            - 2*layer._beta_t**2
-                            ) / layer._beta_l**2
+        tBt[:, 4, 2] = -1*zeta*(
+                                layer._beta_c**2/2
+                                + layer._beta_l**2
+                                - 2*layer._beta_t**2
+                                ) / layer._beta_l**2
 
-    M3 = -np.concatenate((
-        np.hstack((Zt, It)),
-        np.hstack((tAt, tBt))
-        ), axis=2)
+        M3 = -np.concatenate((
+            np.hstack((Zt, It)),
+            np.hstack((tAt, tBt))
+            ), axis=2)
 
-    eigs, vecs = np.linalg.eig(M3)
+        eigs, vecs = np.linalg.eig(M3)
 
-    # Reshape into a useable array
-    eigs = eigs.reshape((len(kx), len(wn), 10), order='F')
-    vecs = vecs.reshape((len(kx), len(wn), 10, 10), order='F')
+        # Reshape into a useable array
+        eigs = eigs.reshape((len(kx), len(wn), 10), order='F')
+        vecs = vecs.reshape((len(kx), len(wn), 10, 10), order='F')
 
-    # Initial sort
-    a = -1
-    order = eigs.argsort(axis=a)
-    m, n, k = eigs.shape
-    idx = np.ogrid[:m, :n, :k]
-    idx[-1] = order
-    eigs_r = eigs[tuple(idx)]
+        # Initial sort
+        a = -1
+        order = eigs.argsort(axis=a)
+        m, n, k = eigs.shape
+        idx = np.ogrid[:m, :n, :k]
+        idx[-1] = order
+        eigs_r = eigs[tuple(idx)]
 
-    m, n, k, o = vecs.shape
-    idx = np.ogrid[:m, :n, :k, :o]
-    order = np.repeat(order[:, :, np.newaxis, :], 10, axis=2)
-    idx[-1] = order
-    vecs_r = vecs[tuple(idx)]
+        m, n, k, o = vecs.shape
+        idx = np.ogrid[:m, :n, :k, :o]
+        order = np.repeat(order[:, :, np.newaxis, :], 10, axis=2)
+        idx[-1] = order
+        vecs_r = vecs[tuple(idx)]
 
-    eigs_ph, vecs_ph = pol_comp(eigs_r[:, :, 5:7], vecs_r[:, :, :, 5:7])
-    eigs_to, vecs_to = pol_comp(eigs_r[:, :, 7:9], vecs_r[:, :, :, 7:9])
+        eigs_ph, vecs_ph = pol_comp(eigs_r[:, :, 5:7], vecs_r[:, :, :, 5:7])
+        eigs_to, vecs_to = pol_comp(eigs_r[:, :, 7:9], vecs_r[:, :, :, 7:9])
 
-    sorted_eigs = np.concatenate((np.concatenate(
-        (eigs_ph, eigs_to), axis=2
-        ), eigs_r[:, :, -1:]), axis=2
-    )
+        sorted_eigs = np.concatenate((np.concatenate(
+            (eigs_ph, eigs_to), axis=2
+            ), eigs_r[:, :, -1:]), axis=2
+        )
 
-    sorted_vecs = np.concatenate((np.concatenate(
-        (vecs_ph, vecs_to), axis=3
-        ), vecs_r[:, :, :, -1:]), axis=3
-    )
+        sorted_vecs = np.concatenate((np.concatenate(
+            (vecs_ph, vecs_to), axis=3
+            ), vecs_r[:, :, :, -1:]), axis=3
+        )
 
-    # Reverse propagation
-    eigs_ph_r, vecs_ph_r = pol_comp(eigs_r[:, :, 3:5], vecs_r[:, :, :, 3:5])
-    eigs_to_r, vecs_to_r = pol_comp(eigs_r[:, :, 1:3], vecs_r[:, :, :, 1:3])
+        # Reverse propagation
+        eigs_ph_r, vecs_ph_r = pol_comp(eigs_r[:, :, 3:5], vecs_r[:, :, :, 3:5])
+        eigs_to_r, vecs_to_r = pol_comp(eigs_r[:, :, 1:3], vecs_r[:, :, :, 1:3])
 
-    sorted_eigs_r = np.concatenate((np.concatenate(
-        (eigs_ph_r, eigs_to_r), axis=2
-        ), eigs_r[:, :, :1]), axis=2
-    )
+        sorted_eigs_r = np.concatenate((np.concatenate(
+            (eigs_ph_r, eigs_to_r), axis=2
+            ), eigs_r[:, :, :1]), axis=2
+        )
 
-    sorted_vecs_r = np.concatenate((np.concatenate(
-        (vecs_ph_r, vecs_to_r), axis=3
-        ), vecs_r[:, :, :, :1]), axis=3
-    )
+        sorted_vecs_r = np.concatenate((np.concatenate(
+            (vecs_ph_r, vecs_to_r), axis=3
+            ), vecs_r[:, :, :, :1]), axis=3
+        )
 
     if ang:
-        # return sorted_eigs[0], sorted_vecs[0], sorted_eigs_r[0], sorted_vecs_r[0]
         eigs_out = np.concatenate([sorted_eigs[0], sorted_eigs_r[0]], axis=1)
         vecs_out = np.concatenate([sorted_vecs[0], sorted_vecs_r[0]], axis=2)
         return eigs_out, vecs_out
     else:
         return sorted_eigs, sorted_vecs
 
+
 def pol_comp(eigs, vecs):
     """ Function to compare the eigenmode polarisation state
     dot dot dot
     """
+
+    ldx = vecs.shape[-2]
+
     fom = (
         np.abs(vecs[:, :, 0])**2
         / (np.abs(vecs[:, :, 0])**2+np.abs(vecs[:, :, 1])**2)
@@ -209,7 +257,7 @@ def pol_comp(eigs, vecs):
 
     m, n, k, o = vecs.shape
     idx = np.ogrid[:m, :n, :k, :o]
-    order = np.repeat(order[:, :, np.newaxis, :], 10, axis=2)
+    order = np.repeat(order[:, :, np.newaxis, :], ldx, axis=2)
     idx[-1] = order
     vecs = vecs[tuple(idx)]
 
@@ -218,7 +266,12 @@ def pol_comp(eigs, vecs):
 
 def field_gen(wn, eigs, vecs, material, ang=None, kx=None):
     """ Takes the eigenvalues and fields calculated for a given layer and finds
-    the full vector of fields required to apply the boundary conditions
+    the full vector of fields required to apply the boundary conditions. The
+    fields are normalised to the electric field parallel to the interface, for
+    TM polarised modes this means they are normalised with respect to the
+    x-component while TE polarised modes they are normalised with respect
+    to the y-comp
+
 
     Parameters
     ----------
@@ -246,7 +299,8 @@ def field_gen(wn, eigs, vecs, material, ang=None, kx=None):
     fields : 3d array
         the full array of fields necessary to solve the boundary matching
         problem for all kx, wn. Fields are outputted in order H, E, P, X with
-        Cartesian components for each ordered x, y, z
+        Cartesian components for each ordered x, y, z and are normalised as
+        described above
     """
 
     # Checks for non-array inputs and converts to numpy arrays
@@ -284,76 +338,107 @@ def field_gen(wn, eigs, vecs, material, ang=None, kx=None):
     layer = Media(material, props, wn)
 
     # Fill components which pre-exist in the input
-    field_vec[:, :, :, 3] = vecs[:, :,  0, :]
+    field_vec[:, :, :, 3] = vecs[:, :, 0, :]
     field_vec[:, :, :, 4] = vecs[:, :, 1, :]
-    field_vec[:, :, :, 9] = vecs[:, :, 2, :]
-    field_vec[:, :, :, 10] = vecs[:, :, 3, :]
-    field_vec[:, :, :, 11] = -vecs[:, :, 4, :]
-
-    # Broadcast zeta to the leading dimensions of the other arrays
-    zetaf = np.repeat(zeta[:, :, np.newaxis], 10, axis=2)
 
     Ex0 = vecs[:, :, 0, :]
     Ey0 = vecs[:, :, 1, :]
-    Xx0 = vecs[:, :, 2, :]
-    Xy0 = vecs[:, :, 3, :]
-    Xz0 = -vecs[:, :, 4, :]
 
-    # Calculates the z-component of the electric field from Eq. in the tex file
-    field_vec[:, :, :, 5] = (
-        (
-            Ex0*eigs*zetaf
-            + layer._alpha[2, 2]*layer._mu[1, 1]
-            * Xz0
-            )
-        / (zetaf**2-layer._eps_inf[2, 2]*layer._mu[1, 1])
-        )
+    if layer._beta_l == 2:
 
-    # Calculates the x-component of the magnetic field from Eq. in the tex file
-    field_vec[:, :, :, 0] = -eigs*Ey0/layer._mu[0, 0]
+        zetaf = np.repeat(zeta[:, :, np.newaxis], 2, axis=2)
 
-    # Calculates the y-component of the magnetic field from Eq. in the tex file
-    field_vec[:, :, :, 1] = (
-        (
-            Ex0*eigs*layer._eps_inf[2, 2]
-            + layer._alpha[2, 2]*layer._mu[1, 1]
-            * Xz0*zetaf
-            )
-        / (zetaf**2-layer._eps_inf[2, 2]*layer._mu[1, 1])
-        )
+        field_vec[:, :, :, 0] = -eigs*Ey0/layer._mu[0, 0]
+        field_vec[:, :, :, 1] = Ex0*eigs*layer._eps_inf[2, 2]/(zetaf**2-layer._eps_inf[2, 2]*layer._mu[1, 1])
+        field_vec[:, :, :, 2] = zetaf*Ey0/layer._mu[2, 2]
+        # Calculates the z-component of the electric field from Eq. in the tex file
+        field_vec[:, :, :, 5] = Ex0*eigs*zetaf/(zetaf**2-layer._eps_inf[2, 2]*layer._mu[1, 1])
 
-    # Calculates the z-component of the magnetic field from Eq. in the tex file
-    field_vec[:, :, :, 2] = zetaf*Ey0/layer._mu[2, 2]
+    else:
+        field_vec[:, :, :, 9] = vecs[:, :, 2, :]
+        field_vec[:, :, :, 10] = vecs[:, :, 3, :]
+        field_vec[:, :, :, 11] = -vecs[:, :, 4, :]
 
-    # Calculates the x-component of the polarization field from Eq. in the tex
-    field_vec[:, :, :, 6] = - (
-        (
-            Ex0*(
-                zetaf**2 + layer._eps_inf[2, 2]*eigs**2
-                - layer._eps_inf[2, 2]*layer._mu[1, 1]
+        # Broadcast zeta to the leading dimensions of the other arrays
+        zetaf = np.repeat(zeta[:, :, np.newaxis], 10, axis=2)
+
+        Xx0 = vecs[:, :, 2, :]
+        Xy0 = vecs[:, :, 3, :]
+        Xz0 = -vecs[:, :, 4, :]
+
+        # Calculates the z-component of the electric field from Eq. in the tex file
+        field_vec[:, :, :, 5] = (
+            (
+                Ex0*eigs*zetaf
+                + layer._alpha[2, 2]*layer._mu[1, 1]
+                * Xz0
                 )
-            + layer._alpha[2, 2]*layer._mu[1, 1]
-            * Xz0*zetaf*eigs
+            / (zetaf**2-layer._eps_inf[2, 2]*layer._mu[1, 1])
             )
-        / (zetaf**2-layer._eps_inf[2, 2]*layer._mu[1, 1])
+
+        # Calculates the x-component of the magnetic field from Eq. in the tex file
+        field_vec[:, :, :, 0] = -eigs*Ey0/layer._mu[0, 0]
+
+        # Calculates the y-component of the magnetic field from Eq. in the tex file
+        field_vec[:, :, :, 1] = (
+            (
+                Ex0*eigs*layer._eps_inf[2, 2]
+                + layer._alpha[2, 2]*layer._mu[1, 1]
+                * Xz0*zetaf
+                )
+            / (zetaf**2-layer._eps_inf[2, 2]*layer._mu[1, 1])
+            )
+
+        # Calculates the z-component of the magnetic field from Eq. in the tex file
+        field_vec[:, :, :, 2] = zetaf*Ey0/layer._mu[2, 2]
+
+        # Calculates the x-component of the polarization field from Eq. in the tex
+        field_vec[:, :, :, 6] = - (
+            (
+                Ex0*(
+                    zetaf**2 + layer._eps_inf[2, 2]*eigs**2
+                    - layer._eps_inf[2, 2]*layer._mu[1, 1]
+                    )
+                + layer._alpha[2, 2]*layer._mu[1, 1]
+                * Xz0*zetaf*eigs
+                )
+            / (zetaf**2-layer._eps_inf[2, 2]*layer._mu[1, 1])
+            )
+
+        # Calculates the y-component of the polarization field from Eq. in the tex
+        field_vec[:, :, :, 7] = - (
+            1 - eigs**2/layer._mu[0, 0] - zetaf**2/layer._mu[2, 2]
+            )*Ey0
+
+        # Calculates the z-component of the polarization field from Eq. in the tex
+        field_vec[:, :, :, 8] = (
+            (
+                Ex0*zetaf*eigs*(layer._eps_inf[2, 2] - 1)
+                + layer._alpha[2, 2]*(zetaf**2 - layer._mu[1, 1])
+                * Xz0
+                )
+            / (zetaf**2-layer._eps_inf[2, 2]*layer._mu[1, 1])
+            )
+
+    # Compares the value of the x and y electric Fields
+    ivec = (
+        np.sum(np.sum(np.abs(field_vec[:, :, :, 3]), axis=1), axis=0)
+        > np.sum(np.sum(np.abs(field_vec[:, :, :, 4]), axis=1), axis=0)
         )
 
-    # Calculates the y-component of the polarization field from Eq. in the tex
-    field_vec[:, :, :, 7] = - (
-        1 - eigs**2/layer._mu[0, 0] - zetaf**2/layer._mu[2, 2]
-        )*Ey0
+    field_vec_o = np.zeros_like(field_vec)
 
-    # Calculates the z-component of the polarization field from Eq. in the tex
-    field_vec[:, :, :, 8] = (
-        (
-            Ex0*zetaf*eigs*(layer._eps_inf[2, 2] - 1)
-            + layer._alpha[2, 2]*(zetaf**2 - layer._mu[1, 1])
-            * Xz0
-            )
-        / (zetaf**2-layer._eps_inf[2, 2]*layer._mu[1, 1])
-        )
+    for idx, iv in enumerate(ivec):
+        if iv:
+            field_vec_o[:, :, idx, :] = (
+                field_vec[:, :, idx, :]/field_vec[:, :, idx, 3, None]
+                )
+        else:
+            field_vec_o[:, :, idx, :] = (
+                field_vec[:, :, idx, :]/field_vec[:, :, idx, 4, None]
+                )
 
     if ang:
-        return field_vec[0]
+        return field_vec_o[0]
     else:
-        return field_vec
+        return field_vec_o
