@@ -187,7 +187,7 @@ def layer_dispersion(wn, material, ang=None, kx=None):
         eigs = eigs.reshape((len(kx), len(wn), 10), order='F')
         vecs = vecs.reshape((len(kx), len(wn), 10, 10), order='F')
 
-        # Initial sort
+        # Initial sort for photon modes
         a = -1
         order = eigs.argsort(axis=a)
         m, n, k = eigs.shape
@@ -202,30 +202,59 @@ def layer_dispersion(wn, material, ang=None, kx=None):
         vecs_r = vecs[tuple(idx)]
 
         eigs_ph, vecs_ph = pol_comp(eigs_r[:, :, 5:7], vecs_r[:, :, :, 5:7])
-        eigs_to, vecs_to = pol_comp(eigs_r[:, :, 7:9], vecs_r[:, :, :, 7:9])
+        eigs_ph_r, vecs_ph_r = pol_comp(eigs_r[:, :, 3:5], vecs_r[:, :, :, 3:5])
+
+        # New Sort, more robust for phonon modes
+        eigs_phonon = np.concatenate(
+            (eigs_r[:, :, :3], eigs_r[:, :, 7:]), axis=2
+            )
+        vecs_phonon = np.concatenate(
+            (vecs_r[:, :, :, :3], vecs_r[:, :, :, 7:]), axis=3
+            )
+
+        a = -1
+        order = np.lexsort(
+            (eigs_phonon.real, eigs_phonon.imag, -np.sign(eigs_phonon.real)),
+            axis=a
+            )
+        m, n, k = eigs_phonon.shape
+        idx = np.ogrid[:m, :n, :k]
+        idx[-1] = order
+        eigs_r_pho = eigs_phonon[tuple(idx)]
+
+        m, n, k, o = vecs_phonon.shape
+        idx = np.ogrid[:m, :n, :k, :o]
+        order = np.repeat(order[:, :, np.newaxis, :], 10, axis=2)
+        idx[-1] = order
+        vecs_r_pho = vecs_phonon[tuple(idx)]
+
+        eigs_to, vecs_to = pol_comp(
+            eigs_r_pho[:, :, 4:], vecs_r_pho[:, :, :, 4:]
+            )
 
         sorted_eigs = np.concatenate((np.concatenate(
             (eigs_ph, eigs_to), axis=2
-            ), eigs_r[:, :, -1:]), axis=2
+            ), eigs_r_pho[:, :, 3:4]), axis=2
         )
 
         sorted_vecs = np.concatenate((np.concatenate(
             (vecs_ph, vecs_to), axis=3
-            ), vecs_r[:, :, :, -1:]), axis=3
+            ), vecs_r_pho[:, :, :, 3:4]), axis=3
         )
 
         # Reverse propagation
-        eigs_ph_r, vecs_ph_r = pol_comp(eigs_r[:, :, 3:5], vecs_r[:, :, :, 3:5])
-        eigs_to_r, vecs_to_r = pol_comp(eigs_r[:, :, 1:3], vecs_r[:, :, :, 1:3])
+        eigs_to_r, vecs_to_r = pol_comp(
+            eigs_r_pho[:, :, 0:2], vecs_r_pho[:, :, :, 0:2]
+            )
 
         sorted_eigs_r = np.concatenate((np.concatenate(
             (eigs_ph_r, eigs_to_r), axis=2
-            ), eigs_r[:, :, :1]), axis=2
+            ), eigs_r_pho[:, :, 2:3]), axis=2
         )
 
         sorted_vecs_r = np.concatenate((np.concatenate(
             (vecs_ph_r, vecs_to_r), axis=3
-            ), vecs_r[:, :, :, :1]), axis=3
+            ), vecs_r_pho[:, :, :, 2:3]), axis=3
         )
 
     if ang:
@@ -233,7 +262,7 @@ def layer_dispersion(wn, material, ang=None, kx=None):
         vecs_out = np.concatenate([sorted_vecs[0], sorted_vecs_r[0]], axis=2)
         return eigs_out, vecs_out
     else:
-        return sorted_eigs, sorted_vecs
+        return eigs_phonon, vecs_phonon
 
 
 def pol_comp(eigs, vecs):
@@ -430,12 +459,18 @@ def field_gen(wn, eigs, vecs, material, ang=None, kx=None):
 
     for idx, iv in enumerate(ivec):
         if iv:
-            field_vec_o[:, :, idx, :] = (
-                field_vec[:, :, idx, :]/field_vec[:, :, idx, 3, None]
+            if np.any(field_vec[:, :, idx, 3, None] == 0):
+                field_vec_o[:, :, idx, :] = field_vec[:, :, idx, :]
+            else:
+                field_vec_o[:, :, idx, :] = (
+                  field_vec[:, :, idx, :]/field_vec[:, :, idx, 3, None]
                 )
         else:
-            field_vec_o[:, :, idx, :] = (
-                field_vec[:, :, idx, :]/field_vec[:, :, idx, 4, None]
+            if np.any(field_vec[:, :, idx, 4, None] == 0):
+                field_vec_o[:, :, idx, :] = field_vec[:, :, idx, :]
+            else:
+                field_vec_o[:, :, idx, :] = (
+                    field_vec[:, :, idx, :]/field_vec[:, :, idx, 4, None]
                 )
 
     if ang:
