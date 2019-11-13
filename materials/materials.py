@@ -204,7 +204,7 @@ class Media:
             arrays = [(wn), (kx)]
             arr = np.array(list(product(*arrays)))
             zeta = np.zeros_like(wn)
-            zeta[:] = np.sin(ang*np.pi/180)
+            zeta[:] = np.sin(ang)
         else:
             arrays = [(wn), (kx)]
             arr = np.array(list(product(*arrays)))
@@ -340,7 +340,6 @@ class Media:
             vecs_photon = np.concatenate(
                 (vecs_r[:, :, :, 3:5], vecs_r[:, :, :, 5:7]), axis=3
                 )
-
 
             # Initial sort for photon modes
             a = -1
@@ -511,7 +510,7 @@ class Media:
             arrays = [(wn), (kx)]
             arr = np.array(list(product(*arrays)))
             zeta = np.zeros_like(wn)
-            zeta[:] = np.sin(ang*np.pi/180)
+            zeta[:] = np.sin(ang)
             vecs = np.expand_dims(vecs, axis=0)
             eigs = np.expand_dims(eigs, axis=0)
             zeta = np.expand_dims(zeta, axis=0)
@@ -668,7 +667,7 @@ class Media:
         """
 
         zeta = np.zeros_like(wn)
-        zeta[:] = np.sin(ang*np.pi/180)
+        zeta[:] = np.sin(ang)
 
         inter_mat = np.zeros((len(wn), 10, 10), dtype=complex)
 
@@ -682,14 +681,12 @@ class Media:
         # In-plane magnetic field (y)
         inter_mat[:, 3, :] = self._fields[:, :, 1]
 
-        # In-plane polarisation field (x)
-        inter_mat[:, 4, :] = self._fields[:, :, 6]/1e8
-        # In-plane polarisation field (y)
-        inter_mat[:, 5, :] = self._fields[:, :, 7]/1e8
-        #  In-plane polarisation field (y)
-        inter_mat[:, 6, :] = self._fields[:, :, 8]/1e8
-
-        # inter_mat[:, 6, :] = fields[:, :, 5]*mat._eps[:, 2, 2, None]
+        # In-plane ionic displacement field (x)
+        inter_mat[:, 4, :] = self._fields[:, :, 9]
+        # In-plane ionic displacement ield (y)
+        inter_mat[:, 5, :] = self._fields[:, :, 10]
+        #  In-plane ionic displacement field (y)
+        inter_mat[:, 6, :] = self._fields[:, :, 11]
 
         # In-plane stress tensor (x)
         inter_mat[:, 7, :] = 0.5*self._beta_c**2*(
@@ -730,7 +727,9 @@ def properties(mat):
 
     """
 
-    mats = ['vac', 'SiC3C', 'SiC4H', 'GaN', 'AlN', 'SiC4Hsub']
+    mats = [
+    'vac', 'SiC3C', 'SiC4H', 'GaN', 'AlN', 'hBN', 'SiO2', 'SiC4Hsub','AlNiso', 'GaNiso','AlNisob', 'GaNisob','AlNisoa', 'GaNisoa',
+    'AlNanisoa', 'GaNanisoa']
     if mat not in mats:
         raise TypeError(
             "There is no data corresponding to." + mat)
@@ -767,27 +766,39 @@ def properties(mat):
             props['rho'] = 3.21
             props['eps_inf_pa'] = 6.56
             props['eps_inf_pe'] = 6.78
-            props['eps_0_pa'] = 10.109
+            props['eps_0_pa'] = 9.780
             props['eps_0_pe'] = 10.34
             props['wto_pa'] = 796.6
             props['wto_pe'] = 783.6
             props['gamma'] = 4
+        if mat == 'SiO2':
+            props['beta_l'] = 0.0002e4/speed_of_light
+            props['beta_t'] = 0.0001e4/speed_of_light
+            props['beta_c'] = np.sqrt(2*props['beta_t']**2)
+            props['rho'] = 3.21
+            props['eps_inf_pa'] = 6.56
+            props['eps_inf_pe'] = 6.56
+            props['eps_0_pa'] = 6.561
+            props['eps_0_pe'] = 6.561
+            props['wto_pa'] = 10
+            props['wto_pe'] = 10
+            props['gamma'] = 0.1
         if mat == 'SiC4Hsub':
             props['beta_l'] = 2e4/speed_of_light
             props['beta_t'] = 1e4/speed_of_light
             props['beta_c'] = np.sqrt(2*props['beta_t']**2)
             props['rho'] = 3.21
-            props['eps_inf_pa'] = 6.56
-            props['eps_inf_pe'] = 6.78
-            props['eps_0_pa'] = 10.109
-            props['eps_0_pe'] = 10.34
-            props['wto_pa'] = 796.6
-            props['wto_pe'] = 783.6
+            props['eps_inf_pe'] = 6.56
+            props['eps_inf_pa'] = 6.78
+            props['eps_0_pe'] = 9.780
+            props['eps_0_pa'] = 10.34
+            props['wto_pe'] = 796.6#-1.5
+            props['wto_pa'] = 783.6#-1.5
             props['gamma'] = 4
         if mat == 'GaN':
             props['beta_l'] = 1e4/speed_of_light
             props['beta_t'] = 1e4/speed_of_light
-            props['beta_c'] = np.sqrt(3*props['beta_t']**2)
+            props['beta_c'] = np.sqrt(2*props['beta_t']**2)
             props['rho'] = 3.21
             props['eps_inf_pa'] = 5.469
             props['eps_inf_pe'] = 5.416
@@ -795,11 +806,11 @@ def properties(mat):
             props['eps_0_pe'] = 9.5
             props['wto_pa'] = 533
             props['wto_pe'] = 561
-            props['gamma'] = 2
+            props['gamma'] = 4
         if mat == 'AlN':
-            props['beta_l'] = 2e4/speed_of_light
-            props['beta_t'] = 0.5e4/speed_of_light
-            props['beta_c'] = np.sqrt(3*props['beta_t']**2)
+            props['beta_l'] = 1.75e4/speed_of_light
+            props['beta_t'] = 2e4/speed_of_light
+            props['beta_c'] = np.sqrt(2*props['beta_t']**2)
             props['rho'] = 3.21
             props['eps_inf_pe'] = 4.86  # non set
             props['eps_inf_pa'] = 4.84  # non set
@@ -807,7 +818,147 @@ def properties(mat):
             props['eps_0_pe'] = 8.97
             props['wto_pa'] = 614
             props['wto_pe'] = 673
+            props['gamma'] = 4
+        if mat == 'hBN':
+            props['beta_l'] = 1.75e4/speed_of_light
+            props['beta_t'] = 2e4/speed_of_light
+            props['beta_c'] = np.sqrt(2*props['beta_t']**2)
+            props['rho'] = 3.21
+            props['eps_inf_pe'] = 4.86
+            props['eps_inf_pa'] = 2.85
+            props['eps_0_pa'] = 3.34
+            props['eps_0_pe'] = 6.72
+            props['wto_pa'] = 780
+            props['wto_pe'] = 1370
+            props['gamma'] = 4
+        if mat == 'AlNiso':
+            props['beta_l'] = 0.9e4/speed_of_light
+            props['beta_t'] = 1.0e4/speed_of_light
+            props['beta_c'] = np.sqrt(2*props['beta_t']**2)
+            props['rho'] = 3.21
+            props['eps_inf_pe'] = 4.86  # non set
+            props['eps_inf_pa'] = 4.86  # non set
+            props['eps_0_pa'] = 10.238
+            props['eps_0_pe'] = 10.238
+            props['wto_pa'] = 610.5
+            props['wto_pe'] = 611
+            props['gamma'] = 6.4
+        if mat == 'GaNiso':
+            props['beta_l'] = 1e4/speed_of_light
+            props['beta_t'] = 1.2e4/speed_of_light
+            props['beta_c'] = np.sqrt(2*props['beta_t']**2)
+            props['rho'] = 3.21
+            props['eps_inf_pa'] = 5.416
+            props['eps_inf_pe'] = 5.416
+            props['eps_0_pa'] = 9.5
+            props['eps_0_pe'] = 9.5
+            props['wto_pa'] = 560.5
+            props['wto_pe'] = 561
+            props['gamma'] = 4
+            props['gammaph'] = 2
+        if mat == 'AlNisob':
+            sc = 2.525
+            props['beta_l'] = sc*0.9e4/speed_of_light
+            props['beta_t'] = sc*1.0e4/speed_of_light
+            props['beta_c'] = np.sqrt(2*props['beta_t']**2)
+            props['rho'] = 3.21
+            props['eps_inf_pe'] = 4.86  # non set
+            props['eps_inf_pa'] = 4.86  # non set
+            props['eps_0_pa'] = 10.238
+            props['eps_0_pe'] = 10.238
+            props['wto_pa'] = 610.5
+            props['wto_pe'] = 611
             props['gamma'] = 2
+            props['gammaph'] = 2
+        if mat == 'GaNisob':
+            sc = 2.525
+            props['beta_l'] = sc*1e4/speed_of_light
+            props['beta_t'] = sc*1.2e4/speed_of_light
+            props['beta_c'] = np.sqrt(2*props['beta_t']**2)
+
+            props['rho'] = 3.21
+            props['eps_inf_pa'] = 5.416
+            props['eps_inf_pe'] = 5.416
+            props['eps_0_pa'] = 9.5
+            props['eps_0_pe'] = 9.5
+            props['wto_pa'] = 560.5
+            props['wto_pe'] = 561
+            props['gamma'] = 11*4
+            # props['gamma'] = 1*4
+        if mat == 'AlNisoa':
+            # sc = 1
+            sc = 0.585
+
+            props['beta_l'] = sc*0.9e4/speed_of_light
+            props['beta_t'] = sc*1.0e4/speed_of_light
+
+            props['beta_l'] = 0.65e4/speed_of_light
+            props['beta_t'] = 1.0e1/speed_of_light
+
+            # props['beta_t'] = 1.0e4/speed_of_light
+            props['beta_c'] = np.sqrt(2*props['beta_t']**2)
+            props['rho'] = 3.21
+            props['eps_inf_pe'] = 4.86  # non set
+            props['eps_inf_pa'] = 4.86  # non set
+            props['eps_0_pa'] = 10.238
+            props['eps_0_pe'] = 10.238
+            props['wto_pa'] = 611.48
+            props['wto_pe'] = 611.52
+            props['gamma'] = 10
+        if mat == 'AlNanisoa':
+            # sc = 1
+            sc = 0.585
+
+            props['beta_l'] = sc*0.9e4/speed_of_light
+            props['beta_t'] = sc*1.0e4/speed_of_light
+
+            props['beta_l'] = 0.9e4/speed_of_light
+            props['beta_t'] = 1.0e1/speed_of_light
+
+            props['beta_c'] = np.sqrt(2*props['beta_t']**2)
+            props['rho'] = 3.21
+            props['eps_inf_pe'] = 4.86  # non set
+            props['eps_inf_pa'] = 4.84  # non set
+            props['eps_0_pa'] = 10.238
+            props['eps_0_pe'] = 8.97
+            props['wto_pa'] = 611
+            props['wto_pe'] = 673
+            props['gamma'] = 6
+        if mat == 'GaNisoa':
+            sc = 1
+
+
+            props['beta_l'] = sc*0.9e4/speed_of_light
+            props['beta_t'] = sc*1.0e4/speed_of_light
+
+            props['beta_l'] = 0.65e4/speed_of_light
+            props['beta_t'] = 1.0e1/speed_of_light
+            props['beta_c'] = np.sqrt(2*props['beta_t']**2)
+
+            props['rho'] = 3.21
+            props['eps_inf_pa'] = 5.416
+            props['eps_inf_pe'] = 5.416
+            props['eps_0_pa'] = 9.5
+            props['eps_0_pe'] = 9.5
+            props['wto_pa'] = 560.5
+            props['wto_pe'] = 561
+            props['gamma'] = 6
+        if mat == 'GaNanisoa':
+            sc = 1
+
+
+            props['beta_l'] = sc*0.9e4/speed_of_light
+            props['beta_t'] = sc*1.0e4/speed_of_light
+            props['beta_c'] = np.sqrt(2*props['beta_t']**2)
+
+            props['rho'] = 3.21
+            props['eps_inf_pa'] = 5.469
+            props['eps_inf_pe'] = 5.416
+            props['eps_0_pa'] = 10.4
+            props['eps_0_pe'] = 9.5
+            props['wto_pa'] = 533
+            props['wto_pe'] = 561
+            props['gamma'] = 4
 
     props['wlo_pa'] = (
         props['wto_pa']*np.sqrt(props['eps_0_pa']/props['eps_inf_pa'])
