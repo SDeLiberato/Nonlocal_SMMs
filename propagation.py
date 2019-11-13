@@ -4,14 +4,55 @@ import numpy as np
 from materials.materials import Media, properties
 
 
-def scattering_matrix(wn, hetero, ang=None, loc=None):
-    mats = list(set([row[0] for row in hetero]))
-    material_data = dict()
+def scattering_matrix(wn, hetero, ang=None, loc=None, params=None):
+    """ Calculates the scattering matrix as presented in the paper
 
+    Parameters
+    ----------
+    wn: 1D vector
+        Input wavenumbers in units 1/cm
+
+    hetero: list
+        layers and thicknesses comprising the heterostructure
+
+    ang: float, optional
+        the impinging angle in degrees
+
+    loc: bool, optional
+        whether to carry out a local True or nonlocal calculation
+
+    params: dict, optional
+        parameters to override the values in the material library, to be
+        used when optimising
+
+    Returns
+    -------
+
+    tuple
+        first (second) elements correspond to TE (TM) polarised reflectance
+    """
+
+    # Create a list of the unique materials in hetero
+    mats = list(set([row[0] for row in hetero]))
+    material_data = dict()  # Initialises a blank dict for the material data
+    angr = np.deg2rad(ang)  # Convert the incident angle to egrees
+
+    """ Iterates through the heterostructure materials, adding the corresponding
+    properties to material_data
+    """
     for mat in mats:
         props = properties(mat)
-        material_data[mat] = Media(mat, props, wn, ang=ang)
+        """ Checks for custom parameters, passed in the params dict, and if present
+        updates the material properties accordingly
+        """
+        if params:
+            if mat in params:
+                for key, val in params[mat].items():
+                    props[key] = val
 
+        material_data[mat] = Media(mat, props, wn, ang=angr)
+
+    # Initialises the problem by Eq. 48 in the local and nonlocal cases
     if loc:
         S = np.zeros((3, len(wn), 4, 4))
         S[0, :] = np.diag(np.ones(4))
@@ -19,9 +60,13 @@ def scattering_matrix(wn, hetero, ang=None, loc=None):
         S = np.zeros((3, len(wn), 10, 10))
         S[0, :] = np.diag(np.ones(10))
 
-    dim = S.shape[2]//2
+    dim = S.shape[2]//2  #Calculates the dimension of the 4 block matrices
 
+    # Iterate through the hetero object
     for idx, layer in enumerate(hetero[:-1]):
+        """ In the first layer idx=0 the problem is initialised by Eq. 48.
+        In other layers, idx>0, the problem is seeded by the result
+        in layer idx-1 """
         if idx == 0:
             Rud0 = S[0, :, :dim, dim:]
             Tdd0 = S[0, :, dim:, dim:]
@@ -29,12 +74,21 @@ def scattering_matrix(wn, hetero, ang=None, loc=None):
             Tuu0 = S[0, :, :dim:, :dim]
         else:
             Rud0, Rdu0, Tdd0, Tuu0 = Rud1, Rdu1, Tdd1, Tuu1
-        mat = layer[0]
-        thickness = layer[1]
+
+        mat = layer[0]  # Gets the material name in the current layer
+        thickness = layer[1]  # Gets the current layer thickness
+        """ Look up the material properties in the material_data dict,
+        and assign the eigenvalues and interface matrix to eigsm
+        and imatm respectively
+        """
         materialm = material_data[mat]
         eigsm = materialm._eigs
         imatm = materialm._imat
 
+        """ Look up the material properites in the material_data dict for
+        layer n = m + 1, and assign the layers interface matrix to imatn
+
+        """
         materialn = material_data[hetero[idx+1][0]]
         imatn = materialn._imat
 
@@ -89,8 +143,13 @@ def prop_mats(wn, eigs, thickness):
     # diag_vecl = np.exp(-1j*eigs*wn[:, None]*conv*thickness)
 
     # Fixed the eigenvalues further down instead so can use ^^^
-    diag_vecr = np.exp((1j*eigs.real-np.abs(eigs.imag))*wn[:, None]*conv*thickness)
-    diag_vecl = np.exp((-1j*eigs.real-np.abs(eigs.imag))*wn[:, None]*conv*thickness)
+    diag_vecr = np.exp(
+        (1j*eigs.real-np.abs(eigs.imag))*wn[:, None]*conv*thickness
+        )
+
+    diag_vecl = np.exp(
+        (-1j*eigs.real-np.abs(eigs.imag))*wn[:, None]*conv*thickness
+        )
 
     propmat2 = np.zeros((len(wn), 2*dim, 2*dim), dtype=complex)
     propmat1 = np.zeros((len(wn), 2*dim, 2*dim), dtype=complex)
