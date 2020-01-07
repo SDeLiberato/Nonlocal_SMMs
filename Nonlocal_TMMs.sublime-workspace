@@ -4,12 +4,36 @@
 		"selected_items":
 		[
 			[
-				"sorted",
-				"sorted_eigs\tlist | tuple | numpy.ndarray ⟠"
+				"pr",
+				"propagation\tmodule ⟠"
+			],
+			[
+				"Ex",
+				"Ex0\tunknown ⟠"
+			],
+			[
+				"field",
+				"field_vec\tdict | numpy.ndarray ⟠"
+			],
+			[
+				"prop",
+				"prop_mat\tdict | numpy.ndarray ⟠"
 			],
 			[
 				"sor",
-				"sorted_vecs\tlist | tuple | numpy.ndarray ⟠"
+				"sorted_eigs\tlist | tuple | numpy.ndarray | numpy.record ⟠"
+			],
+			[
+				"fiel",
+				"field_vec\tdict | numpy.ndarray ⟠"
+			],
+			[
+				"zero",
+				"zeros_like(…)\tfunction ⟠"
+			],
+			[
+				"sorted",
+				"sorted_eigs\tlist | tuple | numpy.ndarray ⟠"
 			],
 			[
 				"_eps",
@@ -39,33 +63,6 @@
 	},
 	"buffers":
 	[
-		{
-			"file": "dispersion.py",
-			"settings":
-			{
-				"buffer_size": 10842,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "plotting/plotting.py",
-			"settings":
-			{
-				"buffer_size": 1093,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "materials/materials.py",
-			"settings":
-			{
-				"buffer_size": 6000,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		}
 	],
 	"build_system": "",
 	"build_system_choices":
@@ -140,9 +137,24 @@
 	],
 	"file_history":
 	[
+		"/Users/christophergubbin/Cluster/Axisymmetric Comsol/Axi.log",
+		"/Users/christophergubbin/Documents/Computation/Nonlocal_TMMs/plotting/plotting.py",
+		"/Users/christophergubbin/Documents/Computation/Nonlocal_TMMs/propagation.py",
+		"/Users/christophergubbin/Documents/Computation/Nonlocal_TMMs/materials/materials.py",
+		"/Users/christophergubbin/Documents/Computation/Axi Comsol/Comsol_data_gold.csv",
+		"/Users/christophergubbin/Documents/Computation/Axi Comsol/Comsol_data_bare.csv",
+		"/Users/christophergubbin/Cluster/Axisymmetric Comsol/Batchrun.py",
+		"/Users/christophergubbin/Documents/Pdfs/Extractsurfaces.sh",
+		"/Users/christophergubbin/Documents/Computation/Nonlocal_TMMs/data/XH_A_exp.dat",
+		"/Users/christophergubbin/Documents/Computation/Nonlocal_TMMs/data/XH_A_calc.dat",
+		"/Users/christophergubbin/Downloads/pygalmesh-0.4.0/src/domain.hpp",
+		"/Users/christophergubbin/Downloads/pygalmesh-0.4.0/setup.py",
+		"/Users/christophergubbin/Downloads/Dune/eigentest.sh",
+		"/Users/christophergubbin/Documents/Computation/MNPBEM17/Readme.txt",
+		"/Users/christophergubbin/Downloads/Nonlocal_TMMs-master/materials/materials.py",
+		"/Users/christophergubbin/Documents/Computation/Nonlocal_TMMs/dispersion.py",
 		"/Users/christophergubbin/Documents/Computation/Nonlocal Paper/ENZotto.py",
 		"/Users/christophergubbin/Documents/Computation/Nonlocal_TMMs/materials.py",
-		"/Users/christophergubbin/Documents/Computation/Nonlocal_TMMs/dispersion.py",
 		"/Users/christophergubbin/Documents/Computation/Nonlocal_TMMs/Nonlocal_TMMs.sublime-project",
 		"/Users/christophergubbin/Documents/Computation/Nonlocal_TMMs/dispersion_theory.md",
 		"/Users/christophergubbin/anaconda/pkgs/qutip-4.2.0-np113py35_2/lib/python3.5/site-packages/qutip/wigner.py",
@@ -191,6 +203,20 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"63",
+			"ang",
+			"materia",
+			"impo",
+			"disper",
+			"media",
+			"smat",
+			"pol_comp",
+			"layer_dis",
+			"layer_fid",
+			"layer",
+			"pol_comp",
+			"self",
+			"gamma",
 			"print",
 			"layer",
 			"eps_inf",
@@ -206,6 +232,11 @@
 		"regex": false,
 		"replace_history":
 		[
+			"s_mat",
+			"pol_comp_o",
+			"self",
+			"self.pol_comp",
+			"self.pol_compl",
 			"mu",
 			"alpha",
 			"eps_inf",
@@ -220,700 +251,8 @@
 	"groups":
 	[
 		{
-			"selected": 0,
 			"sheets":
 			[
-				{
-					"buffer": 0,
-					"file": "dispersion.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 10842,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								5617,
-								5617
-							]
-						],
-						"settings":
-						{
-							"SL.13.region_keys":
-							[
-								"SL.flake8.Highlights.|d6dc29f289e7e97a4bbf33db8336bdd22ea7f418884558a288ca70e0334e666a|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|2c24dc9ae0c849cd83895629ef280fa94adaaee165e614170a4cbb60f7ab37a9|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|0c96ebc3afddfb268d3bea78b55435cf7ddba0d8648c699b4d1b5cdfcc05e425|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|d0709eaa8573a1cc4ad5cc8f28424a4eb9490f84b882d1ad03fa334ecd4348a7|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|f6c1beb9419dd83c389b3dc0da0b41dcb7b1a4ca644764fe3e0bab53fadc626c|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|a69d333859276fbaf2667d5aff113920c57ac11f026339219fe63f3459e21d7d|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|3cfb36802094a83a35dca3740a96047c74497337b3ecf7635e41d286d82e1265|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|1f1f6ad30406772a74c05b836891a67b58c59aa78b55020cd37730e19e951dc2|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|001be79bac7927d887dcfd754dbca2f5ff439effec341148149a7b71149960d0|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Gutter.|region.yellowish markup.warning.sublime_linter|dot",
-								"SL.flake8.Highlights.|a0a7d56617d960f4f2ea6fbdec6484b2958a8d94468d09faa1609a5a364d9308|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|de804260dc41f71210004d0a7022270e1e5d43b9d1d53493dc74532f4e5c1606|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|2ae6d9c510d38cd7ee5b61c2d25347e6af2dac714c09179ac486581f020723b3|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|7dd971474ec01769b2ef3e7a824a8cc6ab9bce3f3f410881d6aa316e8ef6e94b|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|d366ed540406ef5bf0103d828a04047e82d8e85f0e908cde5110130c2ef3d0e2|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|55a7f99ff0251fb9806b41fb91006a86e380087ecb656aea42eab333a3918bfc|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|50f3aad5e0d5def31134182f1b9706dafc9b7c707a79f15927d4c1254d83a0d6|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|5390fbc879135374d02aee903412a0edf1af966d6164b6b2d2eedcf2328b510c|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|81bfc342239b895f0de22582c2b6387d693f99d08be20fb880aa6f3c7b049d14|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|4495b3a75d9a2b34b5bc012cfcedbf43183612b57a9fa861a1db4f8d6a43a911|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|1e250e5eb75bac9a808d554c16da0f417ddfd292a9d5337f382b8171032badbf|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|062b5e675ff514fdd852b35397453b9a852ccaa79110ab71fd8cc790f2bf1a9a|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|36178d924f7d6876856876d5b00f7f5d4d8f85387da3684eda130a7285c51362|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|d884d796a97a5e61acbb3a0036ccc40cef818ece7999e7fe3c04fd89f095efbd|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|de6de4b0411eaf3f8292dff2c6425a9df8546ee797fd66afc99c4e9aaa68b789|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|303070d3842bf667bfcc21e48e49049a345bd436088f52e6c5365052d1c7ce26|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|54a436f4c158de645330811be35fa1afed0d499cf9764123c27c95ddcbbe81a1|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|e7b5ce072cd8e3a989a52d2a6d621ddc124bca02d5639599b7296896720df6be|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|43333c983f0a4d6b0d58c3f7583c34117089ba61080f34ee3ace15985bdd3016|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|43602215bb1db9ce88650001f4a9038218a1cca2d9411ad254fb86d1f6b676ba|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|5550b8e97587755e3e1e135269599fb5186b7e5075436b329b306123edb10e15|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|fc6c2ffff35aad370929f686999b6a4c4a69bff90b7af2131eddb97394a951f3|region.yellowish markup.warning.sublime_linter|32",
-								"sublime_linter.protected_regions"
-							],
-							"SL.67.region_keys":
-							[
-								"SL.flake8.Highlights.|6467025d2cdb57038193aa692c60cabe0781994fe166f8f7ad897e1b1d5b0ef0|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|65214030346f125dce6042b7860e2136f176c5d342dca363c4e894cb0fa2d2e3|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|5543eeacd734ed3ae49b88e4c6e87083e8472a07687fa0e81ddc9a22a6c9d1b4|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|ee7060e94360f3861d7f976810563c2692f6089d29bc701bc307ec9fe4decdf4|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|c598a177260b27c1df91b5d9a8e175c1bf964ad690d99c59f60881a8390ab211|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|139952a2528823ca1ec973ef08622dde4242ebc7891a1b60bc5d03fbd053f82f|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|8eddb56dcc80bce006a455bae688b1bd83d9eb975f6da6a6bdba2276c9b13e12|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|36cef928995d28629da09412ea7406faab1a71e54983ef55d1678c86c23597e5|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|f05fc0ca278c1f8948b333e27cb8b2e8acf1e60d79075dcc6d466e5ac3f0e754|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|4563bcd3b85c793fc44ac538518059c06d8d2468c2f51a6803ed33b64597b8fb|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|9b3d0bfa67eb60c6c1969c9632598e5272ed7d571d33810a85402c35512f5a90|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|6f55fe64539f41d19a308dc35e5607f515e7d9724db081e6bdf2863e5e77b495|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|5f8547b12ad063b11f12758e4e91abcbdba80d835d74ea163e45b8565a8fac44|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|4def0188ff21986ef148aa5a96fca970a74b18b315cb9dbb3b69564fde48b330|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|49378608dbaf8c085157b90f77fa6e30df94a85a501df0033bd4cb27e9b0fe46|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|31bfce66f4a95110c9236d6570697a63ceb6fadb34e9e5961f448e2fa4287b14|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|62ec12f63d847caa1ecfcc1a50d06e3efa6ccee6069edee116dadaf08f2e6f15|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|b45de55163ae5403ff41ca064e373c62e1189cf336a76e71efd871b80779839d|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|d41660d02f42788679ca22a584ecab45cfd752c1e5245af0dcb169e893371ea4|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Gutter.|region.yellowish markup.warning.sublime_linter|dot",
-								"SL.flake8.Highlights.|bd5ac3b5ba64e24194fffbe9871bafa17c9f1885f4fe4c441207f67ec346d510|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|aff27e86e0ee86fd1d9e99be56829b5e71e023c7db7034015eb5b15018b0436a|region.yellowish markup.warning.sublime_linter|32",
-								"sublime_linter.protected_regions",
-								"SL.flake8.Highlights.|000eaf323b029af1d0d68c434213baa1db7596168f5dd4f2a705e4ebf1b163b1|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|df4613a317d79aff0f07173f9a30d3e45d9e6200ccb607b5d9b537ade6d73733|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|df4c15b704380e7cf2fffa796a37e40c3384b012e022d072e2f0ba7046308878|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|a9a844e19527bfcbabeb9e866e1b0a0416202e6c160383e75366c68324a29b3b|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|fbd51a235e1ffa903240f9a5ab9ef4fe57ae4071fc2839e1b3a7939c3c3873c4|region.yellowish markup.warning.sublime_linter|32"
-							],
-							"bracket_highlighter.busy": false,
-							"bracket_highlighter.clone": -1,
-							"bracket_highlighter.clone_locations":
-							{
-								"close":
-								{
-									"1":
-									[
-										4131,
-										4132
-									]
-								},
-								"icon":
-								{
-									"1":
-									[
-										"Packages/BracketHighlighter/icons/round_bracket.png",
-										"region.yellowish"
-									]
-								},
-								"open":
-								{
-									"1":
-									[
-										3961,
-										3962
-									]
-								},
-								"unmatched":
-								{
-								}
-							},
-							"bracket_highlighter.clone_regions":
-							[
-								"bh_default",
-								"bh_default_center",
-								"bh_default_open",
-								"bh_default_close",
-								"bh_default_content",
-								"bh_curly",
-								"bh_curly_center",
-								"bh_curly_open",
-								"bh_curly_close",
-								"bh_curly_content",
-								"bh_square",
-								"bh_square_center",
-								"bh_square_open",
-								"bh_square_close",
-								"bh_square_content",
-								"bh_round",
-								"bh_round_center",
-								"bh_round_open",
-								"bh_round_close",
-								"bh_round_content",
-								"bh_c_define",
-								"bh_c_define_center",
-								"bh_c_define_open",
-								"bh_c_define_close",
-								"bh_c_define_content",
-								"bh_regex",
-								"bh_regex_center",
-								"bh_regex_open",
-								"bh_regex_close",
-								"bh_regex_content",
-								"bh_double_quote",
-								"bh_double_quote_center",
-								"bh_double_quote_open",
-								"bh_double_quote_close",
-								"bh_double_quote_content",
-								"bh_tag",
-								"bh_tag_center",
-								"bh_tag_open",
-								"bh_tag_close",
-								"bh_tag_content",
-								"bh_angle",
-								"bh_angle_center",
-								"bh_angle_open",
-								"bh_angle_close",
-								"bh_angle_content",
-								"bh_unmatched",
-								"bh_unmatched_center",
-								"bh_unmatched_open",
-								"bh_unmatched_close",
-								"bh_unmatched_content",
-								"bh_single_quote",
-								"bh_single_quote_center",
-								"bh_single_quote_open",
-								"bh_single_quote_close",
-								"bh_single_quote_content"
-							],
-							"bracket_highlighter.locations":
-							{
-								"close":
-								{
-									"1":
-									[
-										5622,
-										5623
-									]
-								},
-								"icon":
-								{
-									"1":
-									[
-										"Packages/BracketHighlighter/icons/round_bracket.png",
-										"region.yellowish"
-									]
-								},
-								"open":
-								{
-									"1":
-									[
-										5527,
-										5528
-									]
-								},
-								"unmatched":
-								{
-								}
-							},
-							"bracket_highlighter.regions":
-							[
-								"bh_default",
-								"bh_default_center",
-								"bh_default_open",
-								"bh_default_close",
-								"bh_default_content",
-								"bh_curly",
-								"bh_curly_center",
-								"bh_curly_open",
-								"bh_curly_close",
-								"bh_curly_content",
-								"bh_square",
-								"bh_square_center",
-								"bh_square_open",
-								"bh_square_close",
-								"bh_square_content",
-								"bh_round",
-								"bh_round_center",
-								"bh_round_open",
-								"bh_round_close",
-								"bh_round_content",
-								"bh_c_define",
-								"bh_c_define_center",
-								"bh_c_define_open",
-								"bh_c_define_close",
-								"bh_c_define_content",
-								"bh_regex",
-								"bh_regex_center",
-								"bh_regex_open",
-								"bh_regex_close",
-								"bh_regex_content",
-								"bh_double_quote",
-								"bh_double_quote_center",
-								"bh_double_quote_open",
-								"bh_double_quote_close",
-								"bh_double_quote_content",
-								"bh_tag",
-								"bh_tag_center",
-								"bh_tag_open",
-								"bh_tag_close",
-								"bh_tag_content",
-								"bh_angle",
-								"bh_angle_center",
-								"bh_angle_open",
-								"bh_angle_close",
-								"bh_angle_content",
-								"bh_unmatched",
-								"bh_unmatched_center",
-								"bh_unmatched_open",
-								"bh_unmatched_close",
-								"bh_unmatched_content",
-								"bh_single_quote",
-								"bh_single_quote_center",
-								"bh_single_quote_open",
-								"bh_single_quote_close",
-								"bh_single_quote_content"
-							],
-							"git_gutter_is_enabled": true,
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 1662.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 0,
-					"type": "text"
-				},
-				{
-					"buffer": 1,
-					"file": "plotting/plotting.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 1093,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								1093,
-								1093
-							]
-						],
-						"settings":
-						{
-							"SL.14.region_keys":
-							[
-								"SL.flake8.Highlights.|8f1dd482ceca86e1ab4074c72e815f0b10431647769c1812ef3ba7acd9c5c08c|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|fd9fb820002d79c557be8f0a211a002402336001d032c883379051e88c9de0ca|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Gutter.|region.yellowish markup.warning.sublime_linter|dot",
-								"SL.flake8.Highlights.|36ac4e35e0940e9cb2667c7d87f73d7eb1f77be23a19c267fcade32c0ccabe4a|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|96e1aba84cca7564ec17054a18c1357082ab6209656e6fb48f8ec2975b1d5bc1|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|0cd0245c106d192c228fb11a7b574323e1d969b6e2b4c070eeed97befab50bdd|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|2f70bb0263ebcebb746d7b128c99f9e36b8a11600f463b80e88735f882ac923a|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|d54d7b78d086739db26842759b7d141741b18c2b01723e8a91b9f99524d06b50|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|3108230cb8055929015c1f7c5452c1880c132ac63ad640ec119f5227168f8b91|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|7744ace6698786c60c76a52dec0f8604fdd7a2ebb9cf4c5297596b1d7c2cef63|region.yellowish markup.warning.sublime_linter|32",
-								"sublime_linter.protected_regions",
-								"SL.flake8.Highlights.|44171f5ccbcb9c5418f21702e610af801c9746be8941604dd52aa88ee342bd4a|region.yellowish markup.warning.sublime_linter|32"
-							],
-							"SL.69.region_keys":
-							[
-								"SL.flake8.Highlights.|d54d7b78d086739db26842759b7d141741b18c2b01723e8a91b9f99524d06b50|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|fd9fb820002d79c557be8f0a211a002402336001d032c883379051e88c9de0ca|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|96e1aba84cca7564ec17054a18c1357082ab6209656e6fb48f8ec2975b1d5bc1|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|3108230cb8055929015c1f7c5452c1880c132ac63ad640ec119f5227168f8b91|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Gutter.|region.yellowish markup.warning.sublime_linter|dot",
-								"SL.flake8.Highlights.|7744ace6698786c60c76a52dec0f8604fdd7a2ebb9cf4c5297596b1d7c2cef63|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|0cd0245c106d192c228fb11a7b574323e1d969b6e2b4c070eeed97befab50bdd|region.yellowish markup.warning.sublime_linter|32",
-								"sublime_linter.protected_regions",
-								"SL.flake8.Highlights.|8f1dd482ceca86e1ab4074c72e815f0b10431647769c1812ef3ba7acd9c5c08c|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|2f70bb0263ebcebb746d7b128c99f9e36b8a11600f463b80e88735f882ac923a|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|36ac4e35e0940e9cb2667c7d87f73d7eb1f77be23a19c267fcade32c0ccabe4a|region.yellowish markup.warning.sublime_linter|32",
-								"SL.flake8.Highlights.|44171f5ccbcb9c5418f21702e610af801c9746be8941604dd52aa88ee342bd4a|region.yellowish markup.warning.sublime_linter|32"
-							],
-							"bracket_highlighter.busy": false,
-							"bracket_highlighter.clone": -1,
-							"bracket_highlighter.clone_locations":
-							{
-								"close":
-								{
-								},
-								"icon":
-								{
-								},
-								"open":
-								{
-								},
-								"unmatched":
-								{
-								}
-							},
-							"bracket_highlighter.clone_regions":
-							[
-								"bh_round",
-								"bh_round_center",
-								"bh_round_open",
-								"bh_round_close",
-								"bh_round_content",
-								"bh_single_quote",
-								"bh_single_quote_center",
-								"bh_single_quote_open",
-								"bh_single_quote_close",
-								"bh_single_quote_content",
-								"bh_unmatched",
-								"bh_unmatched_center",
-								"bh_unmatched_open",
-								"bh_unmatched_close",
-								"bh_unmatched_content",
-								"bh_default",
-								"bh_default_center",
-								"bh_default_open",
-								"bh_default_close",
-								"bh_default_content",
-								"bh_square",
-								"bh_square_center",
-								"bh_square_open",
-								"bh_square_close",
-								"bh_square_content",
-								"bh_angle",
-								"bh_angle_center",
-								"bh_angle_open",
-								"bh_angle_close",
-								"bh_angle_content",
-								"bh_c_define",
-								"bh_c_define_center",
-								"bh_c_define_open",
-								"bh_c_define_close",
-								"bh_c_define_content",
-								"bh_curly",
-								"bh_curly_center",
-								"bh_curly_open",
-								"bh_curly_close",
-								"bh_curly_content",
-								"bh_regex",
-								"bh_regex_center",
-								"bh_regex_open",
-								"bh_regex_close",
-								"bh_regex_content",
-								"bh_tag",
-								"bh_tag_center",
-								"bh_tag_open",
-								"bh_tag_close",
-								"bh_tag_content",
-								"bh_double_quote",
-								"bh_double_quote_center",
-								"bh_double_quote_open",
-								"bh_double_quote_close",
-								"bh_double_quote_content"
-							],
-							"bracket_highlighter.locations":
-							{
-								"close":
-								{
-									"1":
-									[
-										1092,
-										1093
-									]
-								},
-								"icon":
-								{
-									"1":
-									[
-										"Packages/BracketHighlighter/icons/round_bracket.png",
-										"region.yellowish"
-									]
-								},
-								"open":
-								{
-									"1":
-									[
-										1091,
-										1092
-									]
-								},
-								"unmatched":
-								{
-								}
-							},
-							"bracket_highlighter.regions":
-							[
-								"bh_default",
-								"bh_default_center",
-								"bh_default_open",
-								"bh_default_close",
-								"bh_default_content",
-								"bh_curly",
-								"bh_curly_center",
-								"bh_curly_open",
-								"bh_curly_close",
-								"bh_curly_content",
-								"bh_square",
-								"bh_square_center",
-								"bh_square_open",
-								"bh_square_close",
-								"bh_square_content",
-								"bh_round",
-								"bh_round_center",
-								"bh_round_open",
-								"bh_round_close",
-								"bh_round_content",
-								"bh_c_define",
-								"bh_c_define_center",
-								"bh_c_define_open",
-								"bh_c_define_close",
-								"bh_c_define_content",
-								"bh_regex",
-								"bh_regex_center",
-								"bh_regex_open",
-								"bh_regex_close",
-								"bh_regex_content",
-								"bh_double_quote",
-								"bh_double_quote_center",
-								"bh_double_quote_open",
-								"bh_double_quote_close",
-								"bh_double_quote_content",
-								"bh_tag",
-								"bh_tag_center",
-								"bh_tag_open",
-								"bh_tag_close",
-								"bh_tag_content",
-								"bh_angle",
-								"bh_angle_center",
-								"bh_angle_open",
-								"bh_angle_close",
-								"bh_angle_content",
-								"bh_unmatched",
-								"bh_unmatched_center",
-								"bh_unmatched_open",
-								"bh_unmatched_close",
-								"bh_unmatched_content",
-								"bh_single_quote",
-								"bh_single_quote_center",
-								"bh_single_quote_open",
-								"bh_single_quote_close",
-								"bh_single_quote_content"
-							],
-							"git_gutter_is_enabled": true,
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 2,
-					"type": "text"
-				},
-				{
-					"buffer": 2,
-					"file": "materials/materials.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 6000,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								5741,
-								5736
-							]
-						],
-						"settings":
-						{
-							"SL.15.region_keys":
-							[
-								"SL.flake8.Gutter.|region.yellowish markup.warning.sublime_linter|dot",
-								"sublime_linter.protected_regions",
-								"SL.flake8.Highlights.|c7cc9015717900a2b5a258232a115d57cb31bae44e6239e70524a1795d4bb64f|region.yellowish markup.warning.sublime_linter|32"
-							],
-							"SL.68.region_keys":
-							[
-								"SL.flake8.Highlights.|1610eff3045e709e9f7ed03f5479d4d69b6f8982e5f97182f34d3f0383a1036a|region.yellowish markup.warning.sublime_linter|32",
-								"sublime_linter.protected_regions",
-								"SL.flake8.Gutter.|region.yellowish markup.warning.sublime_linter|dot"
-							],
-							"bracket_highlighter.busy": false,
-							"bracket_highlighter.clone": -1,
-							"bracket_highlighter.clone_locations":
-							{
-								"close":
-								{
-								},
-								"icon":
-								{
-								},
-								"open":
-								{
-								},
-								"unmatched":
-								{
-								}
-							},
-							"bracket_highlighter.clone_regions":
-							[
-								"bh_round",
-								"bh_round_center",
-								"bh_round_open",
-								"bh_round_close",
-								"bh_round_content",
-								"bh_single_quote",
-								"bh_single_quote_center",
-								"bh_single_quote_open",
-								"bh_single_quote_close",
-								"bh_single_quote_content",
-								"bh_unmatched",
-								"bh_unmatched_center",
-								"bh_unmatched_open",
-								"bh_unmatched_close",
-								"bh_unmatched_content",
-								"bh_default",
-								"bh_default_center",
-								"bh_default_open",
-								"bh_default_close",
-								"bh_default_content",
-								"bh_square",
-								"bh_square_center",
-								"bh_square_open",
-								"bh_square_close",
-								"bh_square_content",
-								"bh_angle",
-								"bh_angle_center",
-								"bh_angle_open",
-								"bh_angle_close",
-								"bh_angle_content",
-								"bh_c_define",
-								"bh_c_define_center",
-								"bh_c_define_open",
-								"bh_c_define_close",
-								"bh_c_define_content",
-								"bh_curly",
-								"bh_curly_center",
-								"bh_curly_open",
-								"bh_curly_close",
-								"bh_curly_content",
-								"bh_regex",
-								"bh_regex_center",
-								"bh_regex_open",
-								"bh_regex_close",
-								"bh_regex_content",
-								"bh_tag",
-								"bh_tag_center",
-								"bh_tag_open",
-								"bh_tag_close",
-								"bh_tag_content",
-								"bh_double_quote",
-								"bh_double_quote_center",
-								"bh_double_quote_open",
-								"bh_double_quote_close",
-								"bh_double_quote_content"
-							],
-							"bracket_highlighter.locations":
-							{
-								"close":
-								{
-								},
-								"icon":
-								{
-								},
-								"open":
-								{
-								},
-								"unmatched":
-								{
-								}
-							},
-							"bracket_highlighter.regions":
-							[
-								"bh_default",
-								"bh_default_center",
-								"bh_default_open",
-								"bh_default_close",
-								"bh_default_content",
-								"bh_curly",
-								"bh_curly_center",
-								"bh_curly_open",
-								"bh_curly_close",
-								"bh_curly_content",
-								"bh_square",
-								"bh_square_center",
-								"bh_square_open",
-								"bh_square_close",
-								"bh_square_content",
-								"bh_round",
-								"bh_round_center",
-								"bh_round_open",
-								"bh_round_close",
-								"bh_round_content",
-								"bh_c_define",
-								"bh_c_define_center",
-								"bh_c_define_open",
-								"bh_c_define_close",
-								"bh_c_define_content",
-								"bh_regex",
-								"bh_regex_center",
-								"bh_regex_open",
-								"bh_regex_close",
-								"bh_regex_content",
-								"bh_double_quote",
-								"bh_double_quote_center",
-								"bh_double_quote_open",
-								"bh_double_quote_close",
-								"bh_double_quote_content",
-								"bh_tag",
-								"bh_tag_center",
-								"bh_tag_open",
-								"bh_tag_close",
-								"bh_tag_content",
-								"bh_angle",
-								"bh_angle_center",
-								"bh_angle_open",
-								"bh_angle_close",
-								"bh_angle_content",
-								"bh_unmatched",
-								"bh_unmatched_center",
-								"bh_unmatched_open",
-								"bh_unmatched_close",
-								"bh_unmatched_content",
-								"bh_single_quote",
-								"bh_single_quote_center",
-								"bh_single_quote_open",
-								"bh_single_quote_close",
-								"bh_single_quote_content"
-							],
-							"git_gutter_is_enabled": true,
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 1,
-					"type": "text"
-				}
 			]
 		}
 	],
