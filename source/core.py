@@ -4,6 +4,7 @@ import numpy as np
 from source.materials import Media, properties
 from source.helper import *
 
+
 def scattering_matrix(
             wn, hetero, ang=None, kx=None, loc=None,
             params=None, return_inter=False
@@ -19,6 +20,8 @@ def scattering_matrix(
     :type ang: Float, optional
     :param kx: Incident wavevectors in inverse centimetre, defaults to None
     :type kx: 1D numpy array
+    :param loc: Whether to do a local calculation or not, defaults to None
+    :type loc: bool
     :param params: Parameters to overwrite the default values in the material
         library, defaults to none
     :type params: Dict, optional
@@ -30,11 +33,11 @@ def scattering_matrix(
     :rtype: Tuple
     """
 
-    # Create a list of the unique materials in hetero
+    # Create a list of the unique materials comprising hetero
     mats = list(set([row[0] for row in hetero]))
-    material_data = dict()  # Initialises a blank dict for the material data
+    material_data = dict()
     if ang:
-        angr = np.deg2rad(ang)  # Convert the incident angle to egrees
+        angr = np.deg2rad(ang)  # Convert the incident angle to degrees
 
     """ Iterates through the heterostructure materials, adding the corresponding
     properties to material_data
@@ -48,6 +51,7 @@ def scattering_matrix(
             if mat in params:
                 for key, val in params[mat].items():
                     props[key] = val
+        # Call the Media class with the appropriate in-plane argument
         if ang:
             material_data[mat] = Media(mat, props, wn, ang=angr)
         elif kx:
@@ -61,8 +65,9 @@ def scattering_matrix(
         S = np.zeros((3, len(wn), 10, 10))
         S[0, :] = np.diag(np.ones(10))
 
-    dim = S.shape[2]//2  #Calculates the dimension of the 4 block matrices
+    dim = S.shape[2]//2  # Calculates the dimension of the 4 block matrices
 
+    # creates placeholders for the intermediate objects
     if return_inter:
         tlen = S.shape[1]
         nlay = len(hetero)
@@ -91,6 +96,7 @@ def scattering_matrix(
 
         mat = layer[0]  # Gets the material name in the current layer
         thickness = layer[1]  # Gets the current layer thickness
+
         """ Look up the material properties in the material_data dict,
         and assign the eigenvalues and interface matrix to eigsm
         and imatm respectively
@@ -101,11 +107,11 @@ def scattering_matrix(
 
         """ Look up the material properites in the material_data dict for
         layer n = m + 1, and assign the layers interface matrix to imatn
-
         """
         materialn = material_data[hetero[idx+1][0]]
         imatn = materialn._imat
 
+        # If doing a local calculation, discard the nonlocal modes
         if loc:
             eigsm = np.concatenate([eigsm[:, 0:2], eigsm[:, 5:7]], axis=1)
             imatm = np.concatenate([imatm[:, :4, :2],
@@ -113,6 +119,7 @@ def scattering_matrix(
             imatn = np.concatenate([imatn[:, :4, :2],
                                     imatn[:, :4, 5:7]], axis=2)
 
+        # Calculate the scattering matrices
         Rud1 = Rud(wn, eigsm, Tdd0, Rud0, Rdu0, Tuu0, imatm, imatn, thickness)
         Tdd1 = Tdd(wn, eigsm, Tdd0, Rud0, Rdu0, Tuu0, imatm, imatn, thickness)
         Rdu1 = Rdu(wn, eigsm, Tdd0, Rud0, Rdu0, Tuu0, imatm, imatn, thickness)
