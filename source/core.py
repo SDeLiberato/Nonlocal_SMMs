@@ -1,7 +1,7 @@
 __all__ = ['scattering_matrix']
 
 import numpy as np
-from materials.materials import Media, properties
+from source.materials import Media, properties
 
 
 def scattering_matrix(wn, hetero, ang=None, kx=None, loc=None, params=None, return_inter=False):
