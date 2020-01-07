@@ -4,7 +4,7 @@ import numpy as np
 from materials.materials import Media, properties
 
 
-def scattering_matrix(wn, hetero, ang=None, loc=None, params=None):
+def scattering_matrix(wn, hetero, ang=None, kx=None, loc=None, params=None, return_inter=False):
     """ Calculates the scattering matrix as presented in the paper
 
     Parameters
@@ -35,7 +35,8 @@ def scattering_matrix(wn, hetero, ang=None, loc=None, params=None):
     # Create a list of the unique materials in hetero
     mats = list(set([row[0] for row in hetero]))
     material_data = dict()  # Initialises a blank dict for the material data
-    angr = np.deg2rad(ang)  # Convert the incident angle to egrees
+    if ang:
+        angr = np.deg2rad(ang)  # Convert the incident angle to egrees
 
     """ Iterates through the heterostructure materials, adding the corresponding
     properties to material_data
@@ -49,8 +50,10 @@ def scattering_matrix(wn, hetero, ang=None, loc=None, params=None):
             if mat in params:
                 for key, val in params[mat].items():
                     props[key] = val
-
-        material_data[mat] = Media(mat, props, wn, ang=angr)
+        if ang:
+            material_data[mat] = Media(mat, props, wn, ang=angr)
+        elif kx:
+            material_data[mat] = Media(mat, props, wn, kx=kx)
 
     # Initialises the problem by Eq. 48 in the local and nonlocal cases
     if loc:
@@ -62,6 +65,14 @@ def scattering_matrix(wn, hetero, ang=None, loc=None, params=None):
 
     dim = S.shape[2]//2  #Calculates the dimension of the 4 block matrices
 
+    if return_inter:
+        tlen = S.shape[1]
+        nlay = len(hetero)
+        Rud_ret = np.zeros((nlay, tlen, dim, dim), dtype=complex)
+        Tdd_ret = np.zeros((nlay, tlen, dim, dim), dtype=complex)
+        Tuu_ret = np.zeros((nlay, tlen, dim, dim), dtype=complex)
+        Rdu_ret = np.zeros((nlay, tlen, dim, dim), dtype=complex)
+
     # Iterate through the hetero object
     for idx, layer in enumerate(hetero[:-1]):
         """ In the first layer idx=0 the problem is initialised by Eq. 48.
@@ -72,6 +83,11 @@ def scattering_matrix(wn, hetero, ang=None, loc=None, params=None):
             Tdd0 = S[0, :, dim:, dim:]
             Rdu0 = S[0, :, dim:, :dim]
             Tuu0 = S[0, :, :dim:, :dim]
+            if return_inter:
+                Rud_ret[0, :, :, :] = np.copy(Rud0)
+                Tdd_ret[0, :, :, :] = np.copy(Tdd0)
+                Tuu_ret[0, :, :, :] = np.copy(Tuu0)
+                Rdu_ret[0, :, :, :] = np.copy(Rdu0)
         else:
             Rud0, Rdu0, Tdd0, Tuu0 = Rud1, Rdu1, Tdd1, Tuu1
 
@@ -104,7 +120,17 @@ def scattering_matrix(wn, hetero, ang=None, loc=None, params=None):
         Rdu1 = Rdu(wn, eigsm, Tdd0, Rud0, Rdu0, Tuu0, imatm, imatn, thickness)
         Tuu1 = Tuu(wn, eigsm, Tdd0, Rud0, Rdu0, Tuu0, imatm, imatn, thickness)
 
-    return Rdu1[:, 0, 0], Rdu1[:, 1, 1]
+        if return_inter:
+            Rud_ret[idx+1, :, :, :] = np.copy(Rud1)
+            Tdd_ret[idx+1, :, :, :] = np.copy(Tdd1)
+            Tuu_ret[idx+1, :, :, :] = np.copy(Tuu1)
+            Rdu_ret[idx+1, :, :, :] = np.copy(Rdu1)
+
+    if return_inter:
+        Aout = [Rud_ret, Tdd_ret, Tuu_ret, Rdu_ret]
+        return Rdu1[:, 0, 0], Rdu1[:, 1, 1], Aout#, Rud_ret, Rdu_ret, Tuu_ret, Tdd_ret
+    else:
+        return Rdu1[:, 0, 0], Rdu1[:, 1, 1]
 
 
 def prop_mats(wn, eigs, thickness):
