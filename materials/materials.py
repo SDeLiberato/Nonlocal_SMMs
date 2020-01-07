@@ -7,7 +7,7 @@ from itertools import product
 
 class Media:
 
-    def __init__(self, name, props, wn, ang=None):
+    def __init__(self, name, props, wn, ang=None, kx=None):
         """ Initiates a material instance with name specified by a string and
         properties by a dict
 
@@ -41,11 +41,16 @@ class Media:
         if ang:
             self._ang = ang
 
-            self._eigs, self._vecs = self.layer_dispersion(wn, ang)
+            self._eigs, self._vecs = self.layer_dispersion(wn, ang=ang)
 
-            self._fields = self.field_gen(wn, ang)
-            self._imat = self.inter_mat(wn, ang)
-        else:
+            self._fields = self.field_gen(wn, ang=ang)
+            self._imat = self.inter_mat(wn, ang=ang)
+        elif kx:
+            self._kx = kx
+            self._eigs, self._vecs = self.layer_dispersion(wn, kx=kx)
+
+            self._fields = self.field_gen(wn, kx=kx)
+            self._imat = self.inter_mat(wn, kx=kx)
             pass
 
     def eps_1_osc(self, wn, orientation='pe'):
@@ -193,7 +198,7 @@ class Media:
 
         # Checks for non-array inputs and converts to numpy arrays
         if kx and type(kx) != np.ndarray:
-            kx = np.array(kx)
+            kx = np.array([kx])
         if type(wn) != np.ndarray:
             wn = np.array(wn)
 
@@ -423,6 +428,8 @@ class Media:
             vecs_out = np.concatenate([sorted_vecs[0], sorted_vecs_r[0]], axis=2)
             return eigs_out, vecs_out
         else:
+            eigs_out = np.concatenate([sorted_eigs[0], sorted_eigs_r[0]], axis=1)
+            vecs_out = np.concatenate([sorted_vecs[0], sorted_vecs_r[0]], axis=2)
             return eigs_out, vecs_out
 
     def pol_comp(self, eigs, vecs):
@@ -493,7 +500,7 @@ class Media:
 
         # Checks for non-array inputs and converts to numpy arrays
         if kx and type(kx) != np.ndarray:
-            kx = np.array(kx)
+            kx = np.array([kx])
         if type(wn) != np.ndarray:
             wn = np.array(wn)
 
@@ -518,10 +525,13 @@ class Media:
             arrays = [(wn), (kx)]
             arr = np.array(list(product(*arrays)))
             zeta = arr[:, 1]/arr[:, 0]
-            zeta = np.transpose(zeta.reshape((len(arrays[0]), len(arrays[1]))))
+            # zeta = np.transpose(zeta.reshape((len(arrays[0]), len(arrays[1]))))
             # Reshape input arrays for calculation
-            kx = np.transpose(arr[:, 1].reshape((len(arrays[0]), len(arrays[1]))))
-            wn = np.transpose(arr[:, 0].reshape((len(arrays[0]), len(arrays[1]))))
+            # kx = np.transpose(arr[:, 1].reshape((len(arrays[0]), len(arrays[1]))))
+            # wn = np.transpose(arr[:, 0].reshape((len(arrays[0]), len(arrays[1]))))
+            vecs = np.expand_dims(vecs, axis=0)
+            eigs = np.expand_dims(eigs, axis=0)
+            zeta = np.expand_dims(zeta, axis=0)
         # Initialize empty output vector
         field_vec = np.zeros(
             (len(arrays[1]), len(arrays[0]), 10, 12), dtype=complex
@@ -637,7 +647,7 @@ class Media:
         if ang:
             return field_vec_o[0]
         else:
-            return field_vec_o
+            return field_vec_o[0]
 
     def inter_mat(self, wn, ang=None, kx=None):
         """ Calculates the interface matrix given that layer's eigenvalues
@@ -665,9 +675,21 @@ class Media:
             a matrix of size (len(wn)x10x10) containing the propagation factors for
             each eigenmode
         """
+        # Checks for non-array inputs and converts to numpy arrays
+        if kx and type(kx) != np.ndarray:
+            kx = np.array([kx])
+        if type(wn) != np.ndarray:
+            wn = np.array(wn)
 
-        zeta = np.zeros_like(wn)
-        zeta[:] = np.sin(ang)
+        # Checks for an input angle, if present calculates zeta using this else
+        # uses the input wavevector array
+        if ang:
+            zeta = np.zeros_like(wn)
+            zeta[:] = np.sin(ang)
+        else:
+            arrays = [(wn), (kx)]
+            arr = np.array(list(product(*arrays)))
+            zeta = arr[:, 1]/arr[:, 0]
 
         inter_mat = np.zeros((len(wn), 10, 10), dtype=complex)
 
@@ -904,7 +926,7 @@ def properties(mat):
             props['eps_0_pe'] = 10.238
             props['wto_pa'] = 611.48
             props['wto_pe'] = 611.52
-            props['gamma'] = 10
+            props['gamma'] = 10/4
         if mat == 'AlNanisoa':
             # sc = 1
             sc = 0.585
