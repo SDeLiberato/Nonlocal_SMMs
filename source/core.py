@@ -1,38 +1,51 @@
+
+
 __all__ = ['scattering_matrix']
 
 import numpy as np
 from source.materials import Media, properties
-from source.helper import *
+from source.helper import Rdu, Rud, Tdd, Tuu
 
 
 def scattering_matrix(
             wn, hetero, ang=None, kx=None, loc=None,
             params=None, return_inter=False
         ):
-    """ Calculates the scattering matrix as presented in the paper doi ...
+    """ Calculates the scattering matrix as presented in the paper arXiv
 
-    :param wn: Input wavenumbers in inverse centimetres
-    :type wn: 1D numpy array
-    :param hetero: Ordered list of material names and thicknesses comprising
-        the heterostructure
-    :type hetero: List
-    :param ang: Incident angle in degrees, defaults to None
-    :type ang: Float, optional
-    :param kx: Incident wavevectors in inverse centimetre, defaults to None
-    :type kx: 1D numpy array
-    :param loc: Whether to do a local calculation or not, defaults to None
-    :type loc: bool
-    :param params: Parameters to overwrite the default values in the material
-        library, defaults to none
-    :type params: Dict, optional
-    :param return_inter: ??
-    :type return_inter: ??
+    Parameters
+    ----------
+    wn: 1D numpy array
+        Input wavenumbers in inverse centimetres
+    hetero: list
+        Ordered list. Each element is length 2 list whose first element
+        contains a string corresponding to a material name and whose second
+        element is the layer thickness
+    ang: float, optional
+        Incident angle in degrees, defaults to None. Either this or kx must
+        be passed to the function
+    kx: 1D numpy array, optional
+        Incident wavevectors in inverse centimetre, defaults to None. Either
+        this or ang must be passed to the function
+    loc: bool, optional
+        Whether to do a local calculation or not, defaults to None meaning a
+        nonlocal calculation is carried out
+    params: dict, optional
+        Parameters to overwrite the default values in the material library,
+        efaults to none
+    return_inter: bool, optional
+        Whether to return intermediate results, useful for trobuleshooting.
 
-    :return: Returns a tuple, whose first (second) elements correspond to TE
-        (TM) polarised reflectance
-    :rtype: Tuple
+    Returns
+    -------
+
+    tuple:
+        First (second) elements correspond to TE (TM) polarised reflectance.
     """
 
+    if ang is None and kx is None:
+        raise Exception(
+            'Either an angle ang or wavevector array kx must be passed')
     # Create a list of the unique materials comprising hetero
     mats = list(set([row[0] for row in hetero]))
     material_data = dict()
@@ -43,7 +56,14 @@ def scattering_matrix(
     properties to material_data
     """
     for mat in mats:
-        props = properties(mat)
+        try:
+            props = properties(mat)
+        except KeyError:
+            print(
+                "The material " + mat + """ is not present in the material database.
+                A list of included materials can be accessed by typing ...
+                """
+                )
         """ Checks for custom parameters, passed in the params dict, and if present
         updates the material properties accordingly
         """
@@ -135,4 +155,5 @@ def scattering_matrix(
         Aout = [Rud_ret, Tdd_ret, Tuu_ret, Rdu_ret]
         return Rdu1[:, 0, 0], Rdu1[:, 1, 1], Aout#, Rud_ret, Rdu_ret, Tuu_ret, Tdd_ret
     else:
-        return Rdu1[:, 0, 0], Rdu1[:, 1, 1]
+        output = Rdu1[:, 0, 0], Rdu1[:, 1, 1]
+        return output
