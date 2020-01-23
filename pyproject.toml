@@ -1,7 +1,9 @@
 [tool.poetry]
-name = "nonlocal_tmms"
+name = "nonlocal_smms"
 version = "0.1.0"
-description = ""
+description = "A library to calculate the nonlocal properties of 1D polar hetrostructures using a scattering matrix method"
+homepage = "https://github.com/cgubbin/Nonlocal_TMMs"
+repository = "https://github.com/cgubbin/Nonlocal_TMMs"
 authors = ["Christopher Gubbin <c.r.gubbin@soton.ac.uk>"]
 
 [tool.poetry.dependencies]
