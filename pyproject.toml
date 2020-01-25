@@ -1,15 +1,34 @@
 [tool.poetry]
 name = "nonlocal_smms"
 version = "0.1.0"
-description = "A library to calculate the nonlocal properties of 1D polar hetrostructures using a scattering matrix method"
-homepage = "https://github.com/cgubbin/Nonlocal_TMMs"
-repository = "https://github.com/cgubbin/Nonlocal_TMMs"
+description = "Nonlocal solvers for the optical properties of 1D planar heterostructures"
+homepage = "https://github.com/cgubbin/Nonlocal-TMMs"
+repository = "https://github.com/cgubbin/Nonlocal-TMMs"
 authors = ["Christopher Gubbin <c.r.gubbin@soton.ac.uk>"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
+matplotlib = "^3.1.2"
+numpy = "^1.18.1"
 
 [tool.poetry.dev-dependencies]
+jupyter = "^1.0.0"
+notebook = "^6.0.3"
+pytest = "^5.3.4"
+coverage = {extras = ["toml"], version = "^5.0.3"}
+pytest-cov = "^2.8.1"
+pytest-mock = "^2.0.0"
+black = "^19.10b0"
+
+[tool.coverage.paths]
+source = ["src", "*/site-packages"]
+
+[tool.coverage.run]
+branch = true
+source = ["nonlocal_smms"]
+
+[tool.coverage.report]
+show_missing = true
 
 [build-system]
 requires = ["poetry>=0.12"]
