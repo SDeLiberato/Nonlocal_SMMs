@@ -3,12 +3,12 @@ from tinydb import Query, TinyDB
 # from nonlocal_smms.core import scattering_matrix
 
 
-def test_database_import():
+def test_database_import() -> None:
     db = TinyDB("src/nonlocal_smms/materials.json")
     assert db.all() != []
 
 
-def test_database_query():
+def test_database_query() -> None:
     db = TinyDB("src/nonlocal_smms/materials.json")
     query = Query()
 
