@@ -10,6 +10,7 @@ authors = ["Christopher Gubbin <c.r.gubbin@soton.ac.uk>"]
 python = "^3.7"
 matplotlib = "^3.1.2"
 numpy = "^1.18.1"
+tinydb = "^3.15.2"
 
 [tool.poetry.dev-dependencies]
 jupyter = "^1.0.0"

@@ -787,6 +787,14 @@ version = "0.4.4"
 test = ["pathlib2"]
 
 [[package]]
+category = "main"
+description = "TinyDB is a tiny, document oriented database optimized for your happiness :)"
+name = "tinydb"
+optional = false
+python-versions = "*"
+version = "3.15.2"
+
+[[package]]
 category = "dev"
 description = "Python Library for Tom's Obvious, Minimal Language"
 name = "toml"
@@ -869,7 +877,7 @@ more-itertools = "*"
 docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 
 [metadata]
-content-hash = "aff714a0b0056740a64210a0fd4d0d7d93354f61fb1fd7b453a81c3b8a20505a"
+content-hash = "40a3f5b862dc8d467e03ab1bf9b8f68994e4a4b221ba670ddf41199c7f4b27ab"
 python-versions = "^3.7"
 
 [metadata.files]
@@ -1301,6 +1309,10 @@ terminado = [
 testpath = [
     {file = "testpath-0.4.4-py2.py3-none-any.whl", hash = "sha256:bfcf9411ef4bf3db7579063e0546938b1edda3d69f4e1fb8756991f5951f85d4"},
     {file = "testpath-0.4.4.tar.gz", hash = "sha256:60e0a3261c149755f4399a1fff7d37523179a70fdc3abdf78de9fc2604aeec7e"},
+]
+tinydb = [
+    {file = "tinydb-3.15.2-py2.py3-none-any.whl", hash = "sha256:1087ade5300c47dbf9539d9f6dafd53115bd5e85a67d480d8188bdbfa2d9eaf4"},
+    {file = "tinydb-3.15.2.tar.gz", hash = "sha256:f273d9b6d8b1b5e1d094a6eb8b72851b39b81099293344132c73332b60e3b893"},
 ]
 toml = [
     {file = "toml-0.10.0-py2.7.egg", hash = "sha256:f1db651f9657708513243e61e6cc67d101a39bad662eaa9b5546f789338e07a3"},
