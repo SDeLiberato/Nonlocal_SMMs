@@ -1,3 +1,6 @@
+"""Contains the media class, which holds the properties of a given material in bulk"""
+
+
 __all__ = ["Media"]
 
 from typing import Any, Tuple
@@ -9,6 +12,8 @@ speed_of_light = 299792458
 
 
 class Media:
+    """A class to describe the optical properties of a bulk medium."""
+
     material: str
     wavenumber: np.ndarray
     angle: float
@@ -47,20 +52,18 @@ class Media:
         wavevector: np.ndarray = None,
         orientation: str = "c-cut",
     ):
-        """ Initiates a material instance with name specified by a string and
-        properties by a dict
+        """Initiates a material instance.
 
-        Parameters
-        ----------
+        Args:
+            material (str): The name of the material comprising the layer
+            properties (dict): Containing the material properties
+            wavenumber (np.ndarray): The probe frequencies in inverse centimetres
+            angle (float, optional): The incident angle in radians
+            wavevector (np.ndarray, optional): The incident in-plane wavevector in
+                inverse centimetres. Either an angle or an incident wavevector must
+                be passed.
+            orientation (str): The crystal orientation, accepts either 'a-cut' or 'c-cut'
 
-        name : string
-            name of the material comprising the layer
-
-        properties : dict
-            dict containing the material properties
-
-        wavenumber : float or array
-            float or array containing the probe frequencies
         """
         self.orientation = orientation
         for k, v in properties.items():
@@ -107,25 +110,18 @@ class Media:
     def epsilon_1_oscillator(
         self, wavenumber: np.ndarray, orientation: str = "pe"
     ) -> np.ndarray:
-        """ Returns the dielectric function evaluated at frequencies wavenumber,
-        assuming a 1 oscillator Lorentz model of the dielectric. For materials
-        whose phonon frequencies are set to nil returns eps_inf
+        """Returns the scalar dielectric function.
 
-        Parameters
-        ----------
+        Evaluated at frequencies wavenumber assuming a 1 oscillator Lorentz model of
+        the dielectric. For materials whose phonon frequencies are set to nil returns
+        eps_inf
 
-        wavenumber : array
-            the frequencies to probe
+        Args:
+            wavenumber (np.ndarray): The probe frequencies in inverse centimetres
+            orientation (str): The crystal orientation, accepts either 'a-cut' or 'c-cut'
 
-        orientation : string
-            either pe or pa, determines whether the function is calculated
-            parallel or perpendicular to the crystal axis
-
-        Returns
-        -------
-
-        eps : array
-            dielectric constant evaluated at the input frequencies wavenumber
+        Returns:
+            np.ndarray: The dielectric constant evaluated at input frequencies wavenumber
 
         """
         if orientation == "pe":
@@ -159,25 +155,17 @@ class Media:
         return eps
 
     def epsilon_tensor(self, wavenumber: np.ndarray) -> np.ndarray:
-        """ Returns the permittivity tensor evaluated at frequencies wavenumber, currently
-        assuming a 1 oscillator Lorentz model of the dielectric and that the
-        material is orientationated so it's c-axis is parallel to the z-direction.
+        """Returns the permittivity tensor evaluated at frequencies wavenumber.
 
-        Parameters
-        ----------
+        This assumes a 1 oscillator Lorentz model of the dielectric and that the
+        material is orientated so it's c-axis is parallel or perpendicular to the
+        growth direction. The tensor is assumed to be diagonal
 
-        properties : dict
-            contains the material properties to utilise in the calculation
+        Args:
+            wavenumber (np.ndarray): The probe frequencies in inverse centimetres
 
-        wavenumber : float or array
-            the frequencies to probe
-
-        Returns
-        -------
-
-        eps : array
-            permittivity tensor evaluated at the input frequencies wavenumber assuming
-            the crystal c-axis is parallel to the third dimension
+        Returns:
+            np.ndarray: The dielectric tensor evaluated at input frequencies wavenumber
 
         """
 
@@ -201,24 +189,15 @@ class Media:
         return eps
 
     def mu_tensor(self, wavenumber: np.ndarray) -> np.ndarray:
-        """ Returns the permeability tensor evaluated at frequencies wavenumber, currently
-        assuming non-magnetic media.
+        """Returns the permeability tensor evaluated at frequencies wavenumber.
 
-        Parameters
-        ----------
+        We assume magnetically inactive media so this is just the identity matrix
 
-        properties : dict
-            contains the material properties to utilise in the calculation
+        Args:
+            wavenumber (np.ndarray): The probe frequencies in inverse centimetres
 
-        wavenumber : float or array
-            the frequencies to probe
-
-        Returns
-        -------
-
-        mu : array
-            permeability tensor evaluated at the input frequencies wavenumber assuming
-            the crystal c-axis is parallel to the third dimension
+        Returns:
+            np.ndarray: The permeability tensor for non magnetic media
 
         """
         mu = np.zeros((3, 3), dtype=complex)
@@ -234,53 +213,24 @@ class Media:
         angle: float = None,
         wavevector: np.ndarray = np.ones(1),
     ) -> Tuple[np.ndarray, np.ndarray]:
-        """ Calculates the dispersion of the photonic and longitudinal and transverse
-        phonon eigenmodes of an anisotropic medium, describable by a diagonal
+        """Calculates the dispersion of the system modes.
+
+        We solve for the photonic and the longitudinal and transverse
+        phonon eigenmodes of an anisotropic medium, described by a diagonal
         permeability and permitivitty
 
-        Parameters
-        ----------
+        Args:
+            wavenumber (np.ndarray): The probe frequencies in inverse centimetres
+            angle (float, optional): The incident angle in radians, optional defaults to None
+            wavevector (np.ndarray, optional): The probe in-plane wavevectors in inverse
+                centimetres. This defaults to 1
 
-        wavevector : float or 1d array
-            contains a range of in-plane wavevectors to probe over
-
-        wavenumber : float or 1d array
-            contains a range of frequencies to probe over
-
-        material : string
-            material to analyse, corresponds to an entry in ...
-
-        ang : float
-            optional, corresponds to the incident angle. useage overrides entry
-            of wavevector
-
-        Returns
-        -------
-
-        eigs : array
-            Values representing calculated out-of-plane wavevectors of the
-            eigenmodes of the layer.
-
-        vecs : array
-            Values representing the calculated field components corresponding to
-            the eigenmodes of the layer. These are in order Ex, Ey, Xx, Xy, Xz
-
-
-        References
-        ----------
-
-        The formation of the matrix from which the dispersions are calculated is
-        detailed at " "
-
-        To-do
-        _____
-
-        Currently returning TE and TM polarizations with degenerate frequencies
-        but mixed field polarizations. This isn't great, can we sort in some way?
-        Maybe look at how Nikolai sifts for polarization?
+        Returns:
+            tuple: The first element is the calculated out-of-plane wavevectors of the
+                layers eigenmodes. The second element is those modes eigenvectors, holding
+                the field components in orde Ex, Ey, Xx, Xy, Xz
 
         """
-
         # Checks for non-array inputs and converts to numpy arrays
         if wavevector and type(wavevector) != np.ndarray:
             wavevector = np.array([wavevector])
@@ -542,10 +492,19 @@ class Media:
     def polarisation_comparison(
         self, eigs: np.ndarray, vecs: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray]:
-        """ Function to compare the eigenmode polarisation state
-        dot dot dot
-        """
+        """Function to compare the eigenmode polarisation states.
 
+        Args:
+            eigs (np.ndarray): The layer eigenvalues
+            vecs (np.ndarray)): The corresponding eigenvectors
+
+        Returns:
+            tuple: The first element is the calculated out-of-plane wavevectors of the
+                layers eigenmodes. The second element is those modes eigenvectors, holding
+                the field components in orde Ex, Ey, Xx, Xy, Xz. The eigenmodes have been
+                sorted according to their polarisation state.
+
+        """
         ldx = vecs.shape[-2]
 
         fom = np.abs(vecs[:, :, 0]) ** 2 / (
@@ -571,44 +530,28 @@ class Media:
     def field_generator(
         self, wavenumber: np.ndarray, angle: float = None, wavevector: np.ndarray = None
     ) -> np.ndarray:
-        """ Takes the eigenvalues and fields calculated for a given layer and finds
+        """Calculates the full vector of fields in the layer.
+
+        Takes the eigenvalues and fields calculated for a given layer and finds
         the full vector of fields required to apply the boundary conditions. The
         fields are normalised to the electric field parallel to the interface, for
         TM polarised modes this means they are normalised with respect to the
         x-component while TE polarised modes they are normalised with respect
         to the y-comp
 
+        Args:
+            wavenumber (np.ndarray): The probe frequencies in inverse centimetres
+            angle (float, optional): The incident angle in radians, optional defaults to None
+            wavevector (np.ndarray, optional): The probe in-plane wavevectors in inverse
+                centimetres. This defaults to 1
 
-        Parameters
-        ----------
+        Returns:
+            np.ndarray: the full array of fields necessary to solve the boundary matching
+                problem for all wavevector, wavenumber. Fields are outputted in order
+                H, E, P, X with Cartesian components for each ordered x, y, z and are
+                normalised as described above
 
-        wavevector : float or 1d array
-            contains a range of in-plane wavevectors to probe over
-
-        wavenumber : float or 1d array
-            contains a range of frequencies to probe over
-
-        eigs : 3d array
-            contains eigenvalues outputted from layer_dispersion, corresponding to
-            the frequencies and wavevectors provided in wavevector, wavenumber
-
-        vecs: 3d array
-            contains the eigenvectors outputted from layer_dispersion corresponding
-            to the frequencies and wavevectors provided in wavevector, wavenumber
-
-        material : string
-            material to analyze, corresponds to an entry in ...
-
-        Outputs
-        -------
-
-        fields : 3d array
-            the full array of fields necessary to solve the boundary matching
-            problem for all wavevector, wavenumber. Fields are outputted in order H, E, P, X with
-            Cartesian components for each ordered x, y, z and are normalised as
-            described above
         """
-
         # Checks for non-array inputs and converts to numpy arrays
         if wavevector and type(wavevector) != np.ndarray:
             wavevector = np.array([wavevector])

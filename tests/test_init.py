@@ -1,14 +1,26 @@
+"""Initialisation tests for nonlocal_smms module."""
+
 from tinydb import Query, TinyDB
 
 # from nonlocal_smms.core import scattering_matrix
 
 
 def test_database_import() -> None:
+    """Tests the material database is imported correctly.
+
+    Exits with a test code of 0
+
+    """
     db = TinyDB("src/nonlocal_smms/materials.json")
     assert db.all() != []
 
 
 def test_database_query() -> None:
+    """Tests the material database contains the correct data.
+
+    Exits with a test code of 0
+
+    """
     db = TinyDB("src/nonlocal_smms/materials.json")
     query = Query()
 

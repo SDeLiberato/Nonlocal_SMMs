@@ -1,3 +1,5 @@
+"""Core scattering matrix function."""
+
 __all__ = ["scattering_matrix"]
 
 import os
@@ -17,46 +19,37 @@ def scattering_matrix(
     wavevector: np.ndarray = None,
     locality: str = "nonlocal",
     parameters: dict = None,
-    return_inter: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """ Calculates the scattering matrix as presented in the paper arXiv
+    """Calculates the scattering matrix as presented in the paper arXiv...
 
-    Parameters
-    ----------
-    wavenumber: 1D numpy array
-        Input wavenumbers in inverse centimetres
-    heterostructure: list
-        Ordered list. Each element is length 2 list whose first element
-        contains a string corresponding to a material name and whose second
-        element is the layer thickness
-    orientation: string
-        The considered crystal orientation, either a-cut or c-cut
-    angle: float, optional
-        Incident anglele in degrees, defaults to None. Either this or wavevector must
-        be passed to the function
-    wavevector: 1D numpy array, optional
-        Incident wavevectors in inverse centimetre, defaults to None. Either
-        this or angle must be passed to the function
-    locality: string, optional
-        Whether to do a local calculation or not, defaults to 'nonlocal' meaning a
-        nonlocal calculation is carried out
-    parameters: dict, optional
-        Parameters to overwrite the default values in the material library,
-        efaults to none
-    return_inter: bool, optional
-        Whether to return intermediate results, useful for trobuleshooting.
+    Args:
+        wavenumber (np.ndarray): Input wavenumbers in inverse centimetres
+        heterostructure (list): Each element is length 2 list whose first element
+            contains a string corresponding to a material name and whose second
+            element is the layer thickness
+        orientation (str): The considered crystal orientation, either 'a-cut' or 'c-cut'
+        angle (float, optional): Incident angle in degrees, defaults to None.
+        wavevector (np.ndarray, optional): Incident wavevectors in inverse centimetre,
+            defaults to None.
+        locality (string, optional): Whether to do a local calculation or not, defaults
+            to 'nonlocal' meaning a nonlocal calculation is carried out
+        parameters (dict, optional): Parameters to overwrite the default values in the
+            material library, defaults to none
 
-    Returns
-    -------
+    Returns:
+        tuple: First (second) elements correspond to TE (TM) polarised reflectance.
 
-    tuple:
-        First (second) elements correspond to TE (TM) polarised reflectance.
+    Raises:
+        ValueError: If neither an angle or wavevector is passed
+        ValueError: If both an angle and wavevector is passed
+
     """
 
     if angle is None and wavevector is None:
-        raise Exception(
-            "Either an anglele angle or wavevector array wavevector must be passed"
-        )
+        raise ValueError("Either an angle or wavevector array must be passed")
+    elif angle is not None and wavevector is not None:
+        raise ValueError("Only an angle or wavevector array must be passed")
+
     # Create a list of the unique materials comprising heterostructure
     mats = list(set([row[0] for row in heterostructure]))
     material_data = dict()

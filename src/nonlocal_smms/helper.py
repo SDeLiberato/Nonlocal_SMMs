@@ -1,6 +1,6 @@
-"""
-Helper functions to calculate the scattering and propagation matrices for a
-multilayer stack. These functions are broadly as defined in "Formulation and
+"""Helper functions to calculate the scattering and propagation matrices for a multilayer stack.
+
+These functions are broadly as defined in "Formulation and
 comparison of two recursive matrix algorithms for modeling layered diffraction
 gratings" with an extension to the nonlocal case.
 """
@@ -11,8 +11,8 @@ import numpy as np
 
 
 def Rdu(
-    wn: np.ndarray,
-    eigs: np.ndarray,
+    wavenumber: np.ndarray,
+    eigenvalues: np.ndarray,
     Tdd_o: np.ndarray,
     Rud_o: np.ndarray,
     Rdu_o: np.ndarray,
@@ -21,42 +21,30 @@ def Rdu(
     ib: np.ndarray,
     thickness: float = None,
 ) -> np.ndarray:
-    """ Calculates the interface matrix R_{du} as defined in Eq. ... of the
-    paper doi: .
+    """Calculates the interface matrix R_{du}.
 
-    Parameters
-    ----------
-    wn: 1D numpy array
-        The probe frequencies in inverse centimetres
-    eigs: 2D numpy array
-        The probe eigenvalues (out-of-plane wavevectors) for all modes
-        evaluated at the frequencies wn
-    Tdd_o: numpy array
-        Old value of the matrix T_dd
-    Rud_o: numpy array
-        Old value of the matrix R_ud
-    Rdu_o: numpy array
-        Old value of the matrix R_du
-    Tuu_o: numpy array
-        Old value of the matrix T_uu
-    ia: numpy array
-        Interface matrix for layer a, calculated automatically in creation
-        of the Media class
-    ib: numpy array
-        Interface matrix for layer b, calculated automatically in creation
-        of the Media class
-    thickness: float, optional
-        The current layer thickness, defaults to None indicating that the
-        layer is the first or last in the stack
+    This matrix is defined in Eq. ... of the paper doi or in the projects online
+    documentation.
 
-    Returns
-    -------
-    numpy array:
-        A numpy array containing the matrix R_du evaluated at all
-        frequencies in wn
+    Args:
+        wavenumber (np.ndarray): The probe frequencies in inverse centimetres
+        eigenvalues (np.ndarray): The probe eigenvalues (out-of-plane wavevectors) for all modes
+            evaluated at the frequencies wavenumber
+        Tdd_o (np.ndarray): Old value of the matrix T_dd
+        Rud_o (np.ndarray): Old value of the matrix R_ud
+        Rdu_o (np.ndarray): Old value of the matrix R_du
+        Tuu_o (np.ndarray): Old value of the matrix T_uu
+        ia (np.ndarray): Interface matrix for layer a, calculated automatically in creation
+            of the Media class
+        ib (np.ndarray):Interface matrix for layer b, calculated automatically in creation
+            of the Media class
+        thickness (float, optional): The current layer thickness, defaults to None indicating
+            that the layer is the first or last in the stack
+
+    Returns:
+        np.ndarray: The matrix R_du evaluated at all frequencies in wavenumber
 
     """
-
     # Calculates the matrix dimension, this differs depending on whether
     # the calculation is local or nonlocal
     dim = Tuu_o.shape[-1]
@@ -65,7 +53,7 @@ def Rdu(
     # entries for the same layer, in the latter case sets the interface matrix
     # to the identity
     if np.all(ia == ib):
-        s0 = np.zeros((len(wn), 2 * dim, 2 * dim))
+        s0 = np.zeros((len(wavenumber), 2 * dim, 2 * dim))
         s0[:] = np.identity(2 * dim)
     else:
         s0 = interfacial_matrix(ia, ib)
@@ -73,7 +61,7 @@ def Rdu(
     # If the layer has a finite thickness calculates the propagation matrices
     # and calculates their matrix product with the scattering matrix
     if thickness:
-        lp, rp = propagation_matrices(wn, eigs, thickness)
+        lp, rp = propagation_matrices(wavenumber, eigenvalues, thickness)
 
         s = np.einsum("ijk,ikl->ijl", lp, np.einsum("ijk,ikl->ijl", s0, rp))
     else:
@@ -87,7 +75,7 @@ def Rdu(
     else:
         rdut = s[:, dim:, :dim]
 
-        idenmat = np.zeros((len(wn), dim, dim))
+        idenmat = np.zeros((len(wavenumber), dim, dim))
         idenmat[:] = np.identity(dim)
 
         # Try to invert the matrix and if not calculate the pseudoinverse
@@ -105,8 +93,8 @@ def Rdu(
 
 
 def Rud(
-    wn: np.ndarray,
-    eigs: np.ndarray,
+    wavenumber: np.ndarray,
+    eigenvalues: np.ndarray,
     Tdd_o: np.ndarray,
     Rud_o: np.ndarray,
     Rdu_o: np.ndarray,
@@ -115,40 +103,28 @@ def Rud(
     ib: np.ndarray,
     thickness: float = None,
 ) -> np.ndarray:
-    """ Calculates the interface matrix R_{ud} as defined in Eq. ... of the
-    paper doi: .
+    """Calculates the interface matrix R_{ud}.
 
-    Parameters
-    ----------
-    wn: 1D numpy array
-        The probe frequencies in inverse centimetres
-    eigs: 2D numpy array
-        The probe eigenvalues (out-of-plane wavevectors) for all modes
-        evaluated at the frequencies wn
-    Tdd_o: numpy array
-        Old value of the matrix T_dd
-    Rud_o: numpy array
-        Old value of the matrix R_ud
-    Rdu_o: numpy array
-        Old value of the matrix R_du
-    Tuu_o: numpy array
-        Old value of the matrix T_uu
-    ia: numpy array
-        Interface matrix for layer a, calculated automatically in creation
-        of the Media class
-    ib: numpy array
-        Interface matrix for layer b, calculated automatically in creation
-        of the Media class
-    thickness: float, optional
-        The current layer thickness, defaults to None indicating that the
-        layer is the first or last in the stack
+    This matrix is defined in Eq. ... of the paper doi or in the projects online
+    documentation .
 
-    Returns
-    -------
-    numpy array:
-        A numpy array containing the matrix R_du evaluated at all
-        frequencies in wn
+    Args:
+        wavenumber (np.ndarray): The probe frequencies in inverse centimetres
+        eigenvalues (np.ndarray): The probe eigenvalues (out-of-plane wavevectors) for all modes
+            evaluated at the frequencies wavenumber
+        Tdd_o (np.ndarray): Old value of the matrix T_dd
+        Rud_o (np.ndarray): Old value of the matrix R_ud
+        Rdu_o (np.ndarray): Old value of the matrix R_du
+        Tuu_o (np.ndarray): Old value of the matrix T_uu
+        ia (np.ndarray): Interface matrix for layer a, calculated automatically in creation
+            of the Media class
+        ib (np.ndarray):Interface matrix for layer b, calculated automatically in creation
+            of the Media class
+        thickness (float, optional): The current layer thickness, defaults to None indicating
+            that the layer is the first or last in the stack
 
+    Returns:
+        np.ndarray: The matrix R_ud evaluated at all frequencies in wavenumber
 
     """
     # Calculates the matrix dimension, this differs depending on whether
@@ -159,7 +135,7 @@ def Rud(
     # entries for the same layer, in the latter case sets the interface matrix
     # to the identity
     if np.all(ia == ib):
-        s0 = np.zeros((len(wn), 2 * dim, 2 * dim))
+        s0 = np.zeros((len(wavenumber), 2 * dim, 2 * dim))
         s0[:] = np.identity(2 * dim)
     else:
         s0 = interfacial_matrix(ia, ib)
@@ -167,7 +143,7 @@ def Rud(
     # If the layer has a finite thickness calculates the propagation matrices
     # and calculates their matrix product with the scattering matrix
     if thickness:
-        lp, rp = propagation_matrices(wn, eigs, thickness)
+        lp, rp = propagation_matrices(wavenumber, eigenvalues, thickness)
         s = np.einsum("ijk,ikl->ijl", lp, np.einsum("ijk,ikl->ijl", s0, rp))
     else:
         s = s0
@@ -183,7 +159,7 @@ def Rud(
         tuut = s[:, :dim, :dim]
         tddt = s[:, dim:, dim:]
 
-        idenmat = np.zeros((len(wn), dim, dim))
+        idenmat = np.zeros((len(wavenumber), dim, dim))
         idenmat[:] = np.identity(dim)
 
         # Try to invert the matrix and if not calculate the pseudoinverse
@@ -201,8 +177,8 @@ def Rud(
 
 
 def Tuu(
-    wn: np.ndarray,
-    eigs: np.ndarray,
+    wavenumber: np.ndarray,
+    eigenvalues: np.ndarray,
     Tdd_o: np.ndarray,
     Rud_o: np.ndarray,
     Rdu_o: np.ndarray,
@@ -211,43 +187,30 @@ def Tuu(
     ib: np.ndarray,
     thickness: float = None,
 ) -> np.ndarray:
-    """ Calculates the interface matrix T_{uu} as defined in Eq. ... of the
-    paper doi: .
+    """Calculates the interface matrix T_{uu}.
 
-    Parameters
-    ----------
-    wn: 1D numpy array
-        The probe frequencies in inverse centimetres
-    eigs: 2D numpy array
-        The probe eigenvalues (out-of-plane wavevectors) for all modes
-        evaluated at the frequencies wn
-    Tdd_o: numpy array
-        Old value of the matrix T_dd
-    Rud_o: numpy array
-        Old value of the matrix R_ud
-    Rdu_o: numpy array
-        Old value of the matrix R_du
-    Tuu_o: numpy array
-        Old value of the matrix T_uu
-    ia: numpy array
-        Interface matrix for layer a, calculated automatically in creation
-        of the Media class
-    ib: numpy array
-        Interface matrix for layer b, calculated automatically in creation
-        of the Media class
-    thickness: float, optional
-        The current layer thickness, defaults to None indicating that the
-        layer is the first or last in the stack
+    This matrix is defined in Eq. ... of the paper doi or in the projects online
+    documentation .
 
-    Returns
-    -------
-    numpy array:
-        A numpy array containing the matrix R_du evaluated at all
-        frequencies in wn
+    Args:
+        wavenumber (np.ndarray): The probe frequencies in inverse centimetres
+        eigenvalues (np.ndarray): The probe eigenvalues (out-of-plane wavevectors) for all modes
+            evaluated at the frequencies wavenumber
+        Tdd_o (np.ndarray): Old value of the matrix T_dd
+        Rud_o (np.ndarray): Old value of the matrix R_ud
+        Rdu_o (np.ndarray): Old value of the matrix R_du
+        Tuu_o (np.ndarray): Old value of the matrix T_uu
+        ia (np.ndarray): Interface matrix for layer a, calculated automatically in creation
+            of the Media class
+        ib (np.ndarray):Interface matrix for layer b, calculated automatically in creation
+            of the Media class
+        thickness (float, optional): The current layer thickness, defaults to None indicating
+            that the layer is the first or last in the stack
 
+    Returns:
+        np.ndarray: The matrix T_uu evaluated at all frequencies in wavenumber
 
     """
-
     # Calculates the matrix dimension, this differs depending on whether
     # the calculation is local or nonlocal
     dim = Tuu_o.shape[-1]
@@ -256,7 +219,7 @@ def Tuu(
     # entries for the same layer, in the latter case sets the interface matrix
     # to the identity
     if np.all(ia == ib):
-        s0 = np.zeros((len(wn), 2 * dim, 2 * dim))
+        s0 = np.zeros((len(wavenumber), 2 * dim, 2 * dim))
         s0[:] = np.identity(2 * dim)
     else:
         s0 = interfacial_matrix(ia, ib)
@@ -264,7 +227,7 @@ def Tuu(
     # If the layer has a finite thickness calculates the propagation matrices
     # and calculates their matrix product with the scattering matrix
     if thickness:
-        lp, rp = propagation_matrices(wn, eigs, thickness)
+        lp, rp = propagation_matrices(wavenumber, eigenvalues, thickness)
 
         s = np.einsum("ijk,ikl->ijl", lp, np.einsum("ijk,ikl->ijl", s0, rp))
     else:
@@ -279,7 +242,7 @@ def Tuu(
         rdut = s[:, dim:, :dim]
         tuut = s[:, :dim, :dim]
 
-        idenmat = np.zeros((len(wn), dim, dim))
+        idenmat = np.zeros((len(wavenumber), dim, dim))
         idenmat[:] = np.identity(dim)
 
         # Tries to invert the matrix and if not finds the pseudoinverse
@@ -296,8 +259,8 @@ def Tuu(
 
 
 def Tdd(
-    wn: np.ndarray,
-    eigs: np.ndarray,
+    wavenumber: np.ndarray,
+    eigenvalues: np.ndarray,
     Tdd_o: np.ndarray,
     Rud_o: np.ndarray,
     Rdu_o: np.ndarray,
@@ -306,40 +269,28 @@ def Tdd(
     ib: np.ndarray,
     thickness: float = None,
 ) -> np.ndarray:
-    """ Calculates the interface matrix T_{dd} as defined in Eq. ... of the
-    paper doi: .
+    """Calculates the interface matrix T_{dd}.
 
-    Parameters
-    ----------
-    wn: 1D numpy array
-        The probe frequencies in inverse centimetres
-    eigs: 2D numpy array
-        The probe eigenvalues (out-of-plane wavevectors) for all modes
-        evaluated at the frequencies wn
-    Tdd_o: numpy array
-        Old value of the matrix T_dd
-    Rud_o: numpy array
-        Old value of the matrix R_ud
-    Rdu_o: numpy array
-        Old value of the matrix R_du
-    Tuu_o: numpy array
-        Old value of the matrix T_uu
-    ia: numpy array
-        Interface matrix for layer a, calculated automatically in creation
-        of the Media class
-    ib: numpy array
-        Interface matrix for layer b, calculated automatically in creation
-        of the Media class
-    thickness: float, optional
-        The current layer thickness, defaults to None indicating that the
-        layer is the first or last in the stack
+    This matrix is defined in Eq. ... of the paper doi or in the projects online
+    documentation .
 
-    Returns
-    -------
-    numpy array:
-        A numpy array containing the matrix R_du evaluated at all
-        frequencies in wn
+    Args:
+        wavenumber (np.ndarray): The probe frequencies in inverse centimetres
+        eigenvalues (np.ndarray): The probe eigenvalues (out-of-plane wavevectors) for all modes
+            evaluated at the frequencies wavenumber
+        Tdd_o (np.ndarray): Old value of the matrix T_dd
+        Rud_o (np.ndarray): Old value of the matrix R_ud
+        Rdu_o (np.ndarray): Old value of the matrix R_du
+        Tuu_o (np.ndarray): Old value of the matrix T_uu
+        ia (np.ndarray): Interface matrix for layer a, calculated automatically in creation
+            of the Media class
+        ib (np.ndarray):Interface matrix for layer b, calculated automatically in creation
+            of the Media class
+        thickness (float, optional): The current layer thickness, defaults to None indicating
+            that the layer is the first or last in the stack
 
+    Returns:
+        np.ndarray: The matrix T_dd evaluated at all frequencies in wavenumber
 
     """
     # Calculates the matrix dimension, this differs depending on whether
@@ -350,7 +301,7 @@ def Tdd(
     # entries for the same layer, in the latter case sets the interface matrix
     # to the identity
     if np.all(ia == ib):
-        s0 = np.zeros((len(wn), 2 * dim, 2 * dim))
+        s0 = np.zeros((len(wavenumber), 2 * dim, 2 * dim))
         s0[:] = np.identity(2 * dim)
     else:
         s0 = interfacial_matrix(ia, ib)
@@ -358,7 +309,7 @@ def Tdd(
     # If the layer has a finite thickness calculates the propagation matrices
     # and calculates their matrix product with the scattering matrix
     if thickness:
-        lp, rp = propagation_matrices(wn, eigs, thickness)
+        lp, rp = propagation_matrices(wavenumber, eigenvalues, thickness)
 
         s = np.einsum("ijk,ikl->ijl", lp, np.einsum("ijk,ikl->ijl", s0, rp))
     else:
@@ -373,7 +324,7 @@ def Tdd(
         rdut = s[:, dim:, :dim]
         tddt = s[:, dim:, dim:]
 
-        idenmat = np.zeros((len(wn), dim, dim))
+        idenmat = np.zeros((len(wavenumber), dim, dim))
         idenmat[:] = np.identity(dim)
 
         # Tries to invert matrix and if not calculates the pseudoinverse
@@ -390,48 +341,48 @@ def Tdd(
 
 
 def propagation_matrices(
-    wn: np.ndarray, eigs: np.ndarray, thickness: float
+    wavenumber: np.ndarray, eigenvalues: np.ndarray, thickness: float
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """ Calculates the propagation matrices for a layer of defined thickness
-    given that layer's eigenvalues (out-of-plane wavevectors). This matrix is
-    defined in
+    """Calculates the propagation matrix.
 
-    Parameters
-    ----------
+    For a layer of defined thickness given that layer's eigenvalues
+    (out-of-plane wavevectors) this returns the propagation matrix. This matrix is
+    defined in ...
 
-    wn: 1D numpy array
-        The probe wavenumbers in inverse centimetres
-    eigs: 2D numpy array
-        The eigenvalues for each mode at each frequency in wn
-    thickness: float
-        The layer thickness in metres
+    Args:
+        wavenumber (np.ndarray): The probe frequencies in inverse centimetres
+        eigenvalues (np.ndarray): The probe eigenvalues (out-of-plane wavevectors) for all modes
+            evaluated at the frequencies wavenumber
+        thickness (float, optional): The current layer thickness, defaults to None indicating
+            that the layer is the first or last in the stack
 
-    Returns
-    -------
-
-    tuple:
-        containing the two propagation matrices as defined in
-        in "Formulation and comparison of two recursive matrix algorithms
-        for modeling layered diffraction gratings"
+    Returns:
+        tuple: containing the two propagation matrices as defined in Formulation and comparison
+        of two recursive matrix algorithms for modeling layered diffraction gratings
     """
-
     # Calculates the eigenvalue dimensions, this will differ depending on
     # whether a nonlocal or local calculation is performed
-    dim = eigs.shape[-1] // 2
+    dim = eigenvalues.shape[-1] // 2
     conv = 2 * np.pi / 0.01  # Factor to convert from inverse cm to Hz
 
-    # Calculates the diagonal propagation vectors from the complex eigs
+    # Calculates the diagonal propagation vectors from the complex eigenvalues
     diag_vecr = np.exp(
-        (1j * eigs.real - np.abs(eigs.imag)) * wn[:, None] * conv * thickness
+        (1j * eigenvalues.real - np.abs(eigenvalues.imag))
+        * wavenumber[:, None]
+        * conv
+        * thickness
     )
 
     diag_vecl = np.exp(
-        (-1j * eigs.real - np.abs(eigs.imag)) * wn[:, None] * conv * thickness
+        (-1j * eigenvalues.real - np.abs(eigenvalues.imag))
+        * wavenumber[:, None]
+        * conv
+        * thickness
     )
 
     # Initialise the two propagation matrices
-    propmat1 = np.zeros((len(wn), 2 * dim, 2 * dim), dtype=complex)
-    propmat2 = np.zeros((len(wn), 2 * dim, 2 * dim), dtype=complex)
+    propmat1 = np.zeros((len(wavenumber), 2 * dim, 2 * dim), dtype=complex)
+    propmat2 = np.zeros((len(wavenumber), 2 * dim, 2 * dim), dtype=complex)
 
     for idx in range(dim):
         propmat1[:, idx, idx] = 1
@@ -442,33 +393,27 @@ def propagation_matrices(
     return propmat1, propmat2
 
 
-def interfacial_matrix(
-    i0: np.ndarray, i1: np.ndarray,
-) -> Tuple[np.ndarray, np.ndarray]:
-    """ Calculates the interfacial matrix between two layers with
-    interface matrices i0 and i1
+def interfacial_matrix(ia: np.ndarray, ib: np.ndarray,) -> np.ndarray:
+    """Calculates the interfacial matrix.
 
-    Parameters
-    ----------
+    For two layers with individual interface matrices ia and ib returns the interface
+    matrix
 
-    i0: 2D numpy array
-        The interface matrix for layer 0
-    i1: 2D numpy array
-        The interface matrix for layer 1
+    Args:
+        ia (np.ndarray): Interface matrix for layer a, calculated automatically in creation
+            of the Media class
+        ib (np.ndarray):Interface matrix for layer b, calculated automatically in creation
+            of the Media class
 
-    Returns
-    -------
-
-    2D numpy array:
-        The interfacial matrix between layer 0 and layer 1
+    Returns:
+        np.ndarray: The interfacial matrix between layer 0 and layer 1
     """
-
     # Tries to directly invert and if not uses the pseudoinverse
     try:
-        t = np.einsum("ijk,ikl->ijl", np.linalg.inv(i1), i0)
+        t = np.einsum("ijk,ikl->ijl", np.linalg.inv(ib), ia)
     except np.linalg.LinAlgError as err:
         if "Singular matrix" in str(err):
-            t = np.einsum("ijk,ikl->ijl", np.linalg.pinv(i1), i0)
+            t = np.einsum("ijk,ikl->ijl", np.linalg.pinv(ib), ia)
 
     # finds the problem dimension, differs in the local and nonlocal cases
     dim = t.shape[2] // 2

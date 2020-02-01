@@ -1,3 +1,6 @@
+"""Helper functions for pretty plotting"""
+
+
 __all__ = ["RefPlot"]
 
 import matplotlib.pyplot as plt
@@ -5,6 +8,21 @@ import numpy as np
 
 # flake8: noqa: W605
 def RefPlot(wavenumber: np.ndarray, wavevector: np.ndarray, values: np.ndarray) -> None:
+    """A helper function to generate a reflection map.
+
+    Takes input wavenumbers, wavevectors and values, typically reflectance or transmittance
+    and generates a color map.
+
+    Args:
+        wavenumber (np.ndarray): The probe frequencies in inverse centimetres
+        wavevector (np.ndarray): The probe in-plane wavevectors in inverse centimetres
+        values (np.ndarray): The values to plot, must have dimension equal to the product
+            of the lengths of the wavenumber and wavevector arrays
+
+    Returns:
+        None
+
+    """
     X, Y = np.meshgrid(wavevector, wavenumber)
     fig, axes = plt.subplots(
         nrows=1, ncols=len(values), figsize=(18, 9), sharex=True, sharey=True
