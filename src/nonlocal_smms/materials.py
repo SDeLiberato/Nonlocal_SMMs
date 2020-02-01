@@ -1,5 +1,7 @@
 __all__ = ["Media"]
 
+from typing import Any, Tuple
+
 from itertools import product
 import numpy as np
 
@@ -7,7 +9,44 @@ speed_of_light = 299792458
 
 
 class Media:
-    def __init__(self, name, props, wn, ang=None, kx=None, orient="c-cut"):
+    material: str
+    wavenumber: np.ndarray
+    angle: float
+    wavevector: np.ndarray
+    orientation: np.ndarray
+    eps: np.ndarray
+    mu: np.ndarray
+    alpha: np.ndarray
+    eigs: np.ndarray
+    vecs: np.ndarray
+    fields: np.ndarray
+    imat: np.ndarray
+    beta_c: float
+    beta_t: float
+    beta_l: float
+    rho: float
+    eps_inf_pe: float
+    eps_inf_pa: float
+    eps_0_pe: float
+    eps_0_pa: float
+    gamma: float
+    wto_pe: float
+    wto_pa: float
+    wlo_pe: float
+    wlo_pa: float
+    wlo_ax_pe: float
+    wto_ax_pe: float
+    gamma_ax_pe: float
+
+    def __init__(
+        self,
+        material: str,
+        properties: dict,
+        wavenumber: np.ndarray,
+        angle: float = None,
+        wavevector: np.ndarray = None,
+        orientation: str = "c-cut",
+    ):
         """ Initiates a material instance with name specified by a string and
         properties by a dict
 
@@ -17,67 +56,65 @@ class Media:
         name : string
             name of the material comprising the layer
 
-        props : dict
+        properties : dict
             dict containing the material properties
 
-        wn : float or array
+        wavenumber : float or array
             float or array containing the probe frequencies
         """
-        self._orient = orient
-        self._name = name
-        for k, v in props.items():
-            setattr(self, "_" + k, v)
-        self._wn = wn
-        self._eps = self.epsilon_tensor(wn)
-        self._mu = self.mu_tensor(wn)
+        self.orientation = orientation
+        for k, v in properties.items():
+            setattr(self, k, v)
+        self.wavenumber = wavenumber
+        self.eps = self.epsilon_tensor(wavenumber)
+        self.mu = self.mu_tensor(wavenumber)
 
-        if self._orient == "c-cut":
-            self._eps_inf = np.diag(
-                [self._eps_inf_pe, self._eps_inf_pe, self._eps_inf_pa]
-            )
-            self._alpha = np.diag(
+        if self.orientation == "c-cut":
+            self.eps_inf = np.diag([self.eps_inf_pe, self.eps_inf_pe, self.eps_inf_pa])
+            self.alpha = np.diag(
                 [
-                    np.sqrt(self._eps_0_pe - self._eps_inf_pe) * self._wto_pe,
-                    np.sqrt(self._eps_0_pe - self._eps_inf_pe) * self._wto_pe,
-                    np.sqrt(self._eps_0_pa - self._eps_inf_pa) * self._wto_pa,
+                    np.sqrt(self.eps_0_pe - self.eps_inf_pe) * self.wto_pe,
+                    np.sqrt(self.eps_0_pe - self.eps_inf_pe) * self.wto_pe,
+                    np.sqrt(self.eps_0_pa - self.eps_inf_pa) * self.wto_pa,
                 ]
             )
-        elif self._orient == "a-cut":
-            self._eps_inf = np.diag(
-                [self._eps_inf_pa, self._eps_inf_pe, self._eps_inf_pe]
-            )
-            self._alpha = np.diag(
+        elif self.orientation == "a-cut":
+            self.eps_inf = np.diag([self.eps_inf_pa, self.eps_inf_pe, self.eps_inf_pe])
+            self.alpha = np.diag(
                 [
-                    np.sqrt(self._eps_0_pa - self._eps_inf_pa) * self._wto_pa,
-                    np.sqrt(self._eps_0_pe - self._eps_inf_pe) * self._wto_pe,
-                    np.sqrt(self._eps_0_pe - self._eps_inf_pe) * self._wto_pe,
+                    np.sqrt(self.eps_0_pa - self.eps_inf_pa) * self.wto_pa,
+                    np.sqrt(self.eps_0_pe - self.eps_inf_pe) * self.wto_pe,
+                    np.sqrt(self.eps_0_pe - self.eps_inf_pe) * self.wto_pe,
                 ]
             )
 
-        if ang:
-            self._ang = ang
+        if angle:
+            self.angle = angle
 
-            self._eigs, self._vecs = self.layer_dispersion(wn, ang=ang)
+            self.eigs, self.vecs = self.layer_dispersion(wavenumber, angle=angle)
 
-            self._fields = self.field_gen(wn, ang=ang)
-            self._imat = self.inter_mat(wn, ang=ang)
-        elif kx:
-            self._kx = kx
-            self._eigs, self._vecs = self.layer_dispersion(wn, kx=kx)
+            self.fields = self.field_generator(wavenumber, angle=angle)
+            self.imat = self.interface_matrix(wavenumber, angle=angle)
+        elif wavevector:
+            self.wavevector = wavevector
+            self.eigs, self.vecs = self.layer_dispersion(
+                wavenumber, wavevector=wavevector
+            )
 
-            self._fields = self.field_gen(wn, kx=kx)
-            self._imat = self.inter_mat(wn, kx=kx)
-            pass
+            self.fields = self.field_generator(wavenumber, wavevector=wavevector)
+            self.imat = self.interface_matrix(wavenumber, wavevector=wavevector)
 
-    def eps_1_osc(self, wn, orientation="pe"):
-        """ Returns the dielectric function evaluated at frequencies wn,
+    def epsilon_1_oscillator(
+        self, wavenumber: np.ndarray, orientation: str = "pe"
+    ) -> np.ndarray:
+        """ Returns the dielectric function evaluated at frequencies wavenumber,
         assuming a 1 oscillator Lorentz model of the dielectric. For materials
         whose phonon frequencies are set to nil returns eps_inf
 
         Parameters
         ----------
 
-        wn : float or array
+        wavenumber : array
             the frequencies to probe
 
         orientation : string
@@ -87,44 +124,44 @@ class Media:
         Returns
         -------
 
-        eps : float or array
-            dielectric constant evaluated at the input frequencies wn
+        eps : array
+            dielectric constant evaluated at the input frequencies wavenumber
 
         """
         if orientation == "pe":
             wlo, wto, eps_inf, gam = (
-                self._wlo_pe,
-                self._wto_pe,
-                self._eps_inf_pe,
-                self._gamma,
+                self.wlo_pe,
+                self.wto_pe,
+                self.eps_inf_pe,
+                self.gamma,
             )
         elif orientation == "pa":
             wlo, wto, eps_inf, gam = (
-                self._wlo_pa,
-                self._wto_pa,
-                self._eps_inf_pa,
-                self._gamma,
+                self.wlo_pa,
+                self.wto_pa,
+                self.eps_inf_pa,
+                self.gamma,
             )
         elif orientation == "pe_ax":
             wlo, wto, eps_inf, gam = (
-                self._wlo_ax_pe,
-                self._wto_ax_pe,
-                self._eps_inf_pe,
-                self._gamma_ax_pe,
+                self.wlo_ax_pe,
+                self.wto_ax_pe,
+                self.eps_inf_pe,
+                self.gamma_ax_pe,
             )
 
         eps = (
             eps_inf
-            * (wlo ** 2 - wn * (wn + 1j * gam))
-            / (wto ** 2 - wn * (wn + 1j * gam))
+            * (wlo ** 2 - wavenumber * (wavenumber + 1j * gam))
+            / (wto ** 2 - wavenumber * (wavenumber + 1j * gam))
         )
 
         return eps
 
-    def epsilon_tensor(self, wn):
-        """ Returns the permittivity tensor evaluated at frequencies wn, currently
+    def epsilon_tensor(self, wavenumber: np.ndarray) -> np.ndarray:
+        """ Returns the permittivity tensor evaluated at frequencies wavenumber, currently
         assuming a 1 oscillator Lorentz model of the dielectric and that the
-        material is orientated so it's c-axis is parallel to the z-direction.
+        material is orientationated so it's c-axis is parallel to the z-direction.
 
         Parameters
         ----------
@@ -132,39 +169,39 @@ class Media:
         properties : dict
             contains the material properties to utilise in the calculation
 
-        wn : float or array
+        wavenumber : float or array
             the frequencies to probe
 
         Returns
         -------
 
         eps : array
-            permittivity tensor evaluated at the input frequencies wn assuming
+            permittivity tensor evaluated at the input frequencies wavenumber assuming
             the crystal c-axis is parallel to the third dimension
 
         """
 
-        eps = np.zeros((len(wn), 3, 3), dtype=complex)
+        eps = np.zeros((len(wavenumber), 3, 3), dtype=complex)
 
-        if self._orient == "c-cut":
-            eps[:, 0, 0] = self.eps_1_osc(wn, "pe")
-            eps[:, 1, 1] = self.eps_1_osc(wn, "pe")
-            eps[:, 2, 2] = self.eps_1_osc(wn, "pa")
+        if self.orientation == "c-cut":
+            eps[:, 0, 0] = self.epsilon_1_oscillator(wavenumber, "pe")
+            eps[:, 1, 1] = self.epsilon_1_oscillator(wavenumber, "pe")
+            eps[:, 2, 2] = self.epsilon_1_oscillator(wavenumber, "pa")
             if hasattr(self, "_wlo_ax_pe"):
-                eps[:, 0, 0] += self.eps_1_osc(wn, "pe_ax")
-                eps[:, 1, 1] += self.eps_1_osc(wn, "pe_ax")
-        elif self._orient == "a-cut":
-            eps[:, 0, 0] = self.eps_1_osc(wn, "pa")
-            eps[:, 1, 1] = self.eps_1_osc(wn, "pe")
-            eps[:, 2, 2] = self.eps_1_osc(wn, "pe")
+                eps[:, 0, 0] += self.epsilon_1_oscillator(wavenumber, "pe_ax")
+                eps[:, 1, 1] += self.epsilon_1_oscillator(wavenumber, "pe_ax")
+        elif self.orientation == "a-cut":
+            eps[:, 0, 0] = self.epsilon_1_oscillator(wavenumber, "pa")
+            eps[:, 1, 1] = self.epsilon_1_oscillator(wavenumber, "pe")
+            eps[:, 2, 2] = self.epsilon_1_oscillator(wavenumber, "pe")
             if hasattr(self, "_wlo_ax_pe"):
-                eps[:, 1, 1] += self.eps_1_osc(wn, "pe_ax")
-                eps[:, 2, 2] += self.eps_1_osc(wn, "pe_ax")
+                eps[:, 1, 1] += self.epsilon_1_oscillator(wavenumber, "pe_ax")
+                eps[:, 2, 2] += self.epsilon_1_oscillator(wavenumber, "pe_ax")
 
         return eps
 
-    def mu_tensor(self, wn):
-        """ Returns the permeability tensor evaluated at frequencies wn, currently
+    def mu_tensor(self, wavenumber: np.ndarray) -> np.ndarray:
+        """ Returns the permeability tensor evaluated at frequencies wavenumber, currently
         assuming non-magnetic media.
 
         Parameters
@@ -173,14 +210,14 @@ class Media:
         properties : dict
             contains the material properties to utilise in the calculation
 
-        wn : float or array
+        wavenumber : float or array
             the frequencies to probe
 
         Returns
         -------
 
         mu : array
-            permeability tensor evaluated at the input frequencies wn assuming
+            permeability tensor evaluated at the input frequencies wavenumber assuming
             the crystal c-axis is parallel to the third dimension
 
         """
@@ -191,7 +228,12 @@ class Media:
 
         return mu
 
-    def layer_dispersion(self, wn, ang=None, kx=None):
+    def layer_dispersion(
+        self,
+        wavenumber: np.ndarray,
+        angle: float = None,
+        wavevector: np.ndarray = np.ones(1),
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """ Calculates the dispersion of the photonic and longitudinal and transverse
         phonon eigenmodes of an anisotropic medium, describable by a diagonal
         permeability and permitivitty
@@ -199,10 +241,10 @@ class Media:
         Parameters
         ----------
 
-        kx : float or 1d array
+        wavevector : float or 1d array
             contains a range of in-plane wavevectors to probe over
 
-        wn : float or 1d array
+        wavenumber : float or 1d array
             contains a range of frequencies to probe over
 
         material : string
@@ -210,7 +252,7 @@ class Media:
 
         ang : float
             optional, corresponds to the incident angle. useage overrides entry
-            of kx
+            of wavevector
 
         Returns
         -------
@@ -240,47 +282,51 @@ class Media:
         """
 
         # Checks for non-array inputs and converts to numpy arrays
-        if kx and type(kx) != np.ndarray:
-            kx = np.array([kx])
-        if type(wn) != np.ndarray:
-            wn = np.array(wn)
+        if wavevector and type(wavevector) != np.ndarray:
+            wavevector = np.array([wavevector])
+        if type(wavenumber) != np.ndarray:
+            wavenumber = np.array(wavenumber)
 
         # Checks for an input angle, if present calculates zeta using this else
         # uses the input wavevector array
-        if ang:
-            kx = np.zeros(1)  # Creates a dummy kx to ease code maintanence below
-            arrays = [(wn), (kx)]
+        if angle:
+            wavevector = np.zeros(
+                1
+            )  # Creates a dummy wavevector to ease code maintanence below
+            arrays = [(wavenumber), (wavevector)]
             arr = np.array(list(product(*arrays)))
-            zeta = np.zeros_like(wn)
-            zeta[:] = np.sin(ang)
+            zeta = np.zeros_like(wavenumber)
+            zeta[:] = np.sin(angle)
         else:
-            arrays = [(wn), (kx)]
+            arrays = [(wavenumber), (wavevector)]
             arr = np.array(list(product(*arrays)))
             zeta = arr[:, 1] / arr[:, 0]
 
-        if self._beta_l == 0:
+        if self.beta_l == 0:
             # Creates an array of len(zeta) 5 x 5 identity matrices
             It = np.identity(2)
             It = np.swapaxes(np.broadcast_to(It[..., None], (2, 2, len(zeta))), 0, 2)
             # Creates an array of len(zeta) 5 x 5 null matrices
 
             tAit = np.zeros_like(It, dtype=complex)
-            tAit[:, 0, 0] = zeta ** 2 / self._eps_inf[2, 2] - self._mu[1, 1]
-            tAit[:, 1, 1] = -self._mu[0, 0]
+            tAit[:, 0, 0] = zeta ** 2 / self.eps_inf[2, 2] - self.mu[1, 1]
+            tAit[:, 1, 1] = -self.mu[0, 0]
 
             tCt = np.zeros_like(It, dtype=complex)
-            tCt[:, 0, 0] = self._eps_inf[0, 0]
-            tCt[:, 1, 1] = self._eps_inf[1, 1] - zeta ** 2 / self._mu[2, 2]
+            tCt[:, 0, 0] = self.eps_inf[0, 0]
+            tCt[:, 1, 1] = self.eps_inf[1, 1] - zeta ** 2 / self.mu[2, 2]
 
             fm = np.matmul(tAit, tCt)
 
             sq_eigs, vecs = np.linalg.eig(-fm)
             eigs = np.sqrt(sq_eigs)
 
-            eigs = eigs.reshape((len(kx), len(wn), 2), order="F")
-            vecs = vecs.reshape((len(kx), len(wn), 2, 2), order="F")
+            eigs = eigs.reshape((len(wavevector), len(wavenumber), 2), order="F")
+            vecs = vecs.reshape((len(wavevector), len(wavenumber), 2, 2), order="F")
 
-            eigs_ph, vecs_ph = self.pol_comp(eigs[:, :, :], vecs[:, :, :, :])
+            eigs_ph, vecs_ph = self.polarisation_comparison(
+                eigs[:, :, :], vecs[:, :, :, :]
+            )
 
             ts0, ts1, ts2 = eigs_ph.shape
             zm = np.zeros((ts0, ts1, ts2 + 1))
@@ -310,77 +356,77 @@ class Media:
             tAt = np.zeros_like(It, dtype=complex)
             tBt = np.zeros_like(It, dtype=complex)
 
-            tAt[:, 0, 0] = self._eps_inf[0, 0] * (
-                -(zeta ** 2) / self._eps_inf[2, 2] + self._mu[1, 1]
+            tAt[:, 0, 0] = self.eps_inf[0, 0] * (
+                -(zeta ** 2) / self.eps_inf[2, 2] + self.mu[1, 1]
             )
-            tAt[:, 0, 2] = self._alpha[0, 0] * (
-                -(zeta ** 2) / self._eps_inf[2, 2] + self._mu[1, 1]
+            tAt[:, 0, 2] = self.alpha[0, 0] * (
+                -(zeta ** 2) / self.eps_inf[2, 2] + self.mu[1, 1]
             )
 
-            tAt[:, 1, 1] = self._mu[0, 0] * (
-                -(zeta ** 2) / self._mu[2, 2] + self._eps_inf[1, 1]
+            tAt[:, 1, 1] = self.mu[0, 0] * (
+                -(zeta ** 2) / self.mu[2, 2] + self.eps_inf[1, 1]
             )
-            tAt[:, 1, 3] = self._alpha[1, 1] * self._mu[0, 0]
+            tAt[:, 1, 3] = self.alpha[1, 1] * self.mu[0, 0]
 
-            tAt[:, 2, 0] = -2 * self._alpha[0, 0] / arr[:, 0] ** 2 / self._beta_c ** 2
+            tAt[:, 2, 0] = -2 * self.alpha[0, 0] / arr[:, 0] ** 2 / self.beta_c ** 2
             tAt[:, 2, 2] = (
                 2
                 * (
-                    self._wto_pe ** 2
-                    - arr[:, 0] * (arr[:, 0] + 1j * self._gamma)
-                    - self._beta_l ** 2 * zeta ** 2 * arr[:, 0] ** 2
+                    self.wto_pe ** 2
+                    - arr[:, 0] * (arr[:, 0] + 1j * self.gamma)
+                    - self.beta_l ** 2 * zeta ** 2 * arr[:, 0] ** 2
                 )
                 / arr[:, 0] ** 2
-                / self._beta_c ** 2
+                / self.beta_c ** 2
             )
-            tAt[:, 3, 1] = -2 * self._alpha[1, 1] / arr[:, 0] ** 2 / self._beta_c ** 2
+            tAt[:, 3, 1] = -2 * self.alpha[1, 1] / arr[:, 0] ** 2 / self.beta_c ** 2
             tAt[:, 3, 3] = (
                 2
                 * (
-                    self._wto_pe ** 2
-                    - arr[:, 0] * (arr[:, 0] + 1j * self._gamma)
-                    - 0.5 * self._beta_c ** 2 * zeta ** 2 * arr[:, 0] ** 2
+                    self.wto_pe ** 2
+                    - arr[:, 0] * (arr[:, 0] + 1j * self.gamma)
+                    - 0.5 * self.beta_c ** 2 * zeta ** 2 * arr[:, 0] ** 2
                 )
                 / arr[:, 0] ** 2
-                / self._beta_c ** 2
+                / self.beta_c ** 2
             )
 
             tAt[:, 4, 4] = (
-                self._wto_pa ** 2
-                - arr[:, 0] * (arr[:, 0] + 1j * self._gamma)
-                - 0.5 * self._beta_c ** 2 * zeta ** 2 * arr[:, 0] ** 2
-            ) / arr[:, 0] ** 2 / self._beta_l ** 2 - (
-                self._alpha[2, 2] ** 2
-                * self._mu[1, 1]
+                self.wto_pa ** 2
+                - arr[:, 0] * (arr[:, 0] + 1j * self.gamma)
+                - 0.5 * self.beta_c ** 2 * zeta ** 2 * arr[:, 0] ** 2
+            ) / arr[:, 0] ** 2 / self.beta_l ** 2 - (
+                self.alpha[2, 2] ** 2
+                * self.mu[1, 1]
                 / arr[:, 0] ** 2
-                / self._beta_l ** 2
-                / (zeta ** 2 - self._eps_inf[2, 2] * self._mu[1, 1])
+                / self.beta_l ** 2
+                / (zeta ** 2 - self.eps_inf[2, 2] * self.mu[1, 1])
             )
 
-            tBt[:, 0, 4] = -zeta * self._alpha[2, 2] / self._eps_inf[2, 2]
+            tBt[:, 0, 4] = -zeta * self.alpha[2, 2] / self.eps_inf[2, 2]
 
             tBt[:, 2, 4] = (
                 -2
                 * zeta
-                * (self._beta_c ** 2 / 2 + self._beta_l ** 2 - 2 * self._beta_t ** 2)
-                / self._beta_c ** 2
+                * (self.beta_c ** 2 / 2 + self.beta_l ** 2 - 2 * self.beta_t ** 2)
+                / self.beta_c ** 2
             )
 
             tBt[:, 4, 0] = (
-                -self._alpha[2, 2]
+                -self.alpha[2, 2]
                 * zeta
                 / (
-                    self._beta_l ** 2
+                    self.beta_l ** 2
                     * arr[:, 0] ** 2
-                    * (zeta ** 2 - self._eps_inf[2, 2] * self._mu[1, 1])
+                    * (zeta ** 2 - self.eps_inf[2, 2] * self.mu[1, 1])
                 )
             )
 
             tBt[:, 4, 2] = (
                 -1
                 * zeta
-                * (self._beta_c ** 2 / 2 + self._beta_l ** 2 - 2 * self._beta_t ** 2)
-                / self._beta_l ** 2
+                * (self.beta_c ** 2 / 2 + self.beta_l ** 2 - 2 * self.beta_t ** 2)
+                / self.beta_l ** 2
             )
 
             M3 = -np.concatenate((np.hstack((Zt, It)), np.hstack((tAt, tBt))), axis=2)
@@ -388,8 +434,8 @@ class Media:
             eigs, vecs = np.linalg.eig(M3)
 
             # Reshape into a useable array
-            eigs = eigs.reshape((len(kx), len(wn), 10), order="F")
-            vecs = vecs.reshape((len(kx), len(wn), 10, 10), order="F")
+            eigs = eigs.reshape((len(wavevector), len(wavenumber), 10), order="F")
+            vecs = vecs.reshape((len(wavevector), len(wavenumber), 10, 10), order="F")
 
             # Initial sort for photon modes
             a = -1
@@ -424,10 +470,10 @@ class Media:
             idx[-1] = order
             vecs_photon_s = vecs_photon[tuple(idx)]
 
-            eigs_ph, vecs_ph = self.pol_comp(
+            eigs_ph, vecs_ph = self.polarisation_comparison(
                 eigs_photon_s[:, :, 0:2], vecs_photon_s[:, :, :, 0:2]
             )
-            eigs_ph_r, vecs_ph_r = self.pol_comp(
+            eigs_ph_r, vecs_ph_r = self.polarisation_comparison(
                 eigs_photon_s[:, :, 2:], vecs_photon_s[:, :, :, 2:]
             )
 
@@ -452,7 +498,7 @@ class Media:
             idx[-1] = order
             vecs_r_pho = vecs_phonon[tuple(idx)]
 
-            eigs_to, vecs_to = self.pol_comp(
+            eigs_to, vecs_to = self.polarisation_comparison(
                 eigs_r_pho[:, :, 4:], vecs_r_pho[:, :, :, 4:]
             )
 
@@ -467,7 +513,7 @@ class Media:
             )
 
             # Reverse propagation
-            eigs_to_r, vecs_to_r = self.pol_comp(
+            eigs_to_r, vecs_to_r = self.polarisation_comparison(
                 eigs_r_pho[:, :, 0:2], vecs_r_pho[:, :, :, 0:2]
             )
 
@@ -484,7 +530,7 @@ class Media:
                 axis=3,
             )
 
-        if ang:
+        if angle:
             eigs_out = np.concatenate([sorted_eigs[0], sorted_eigs_r[0]], axis=1)
             vecs_out = np.concatenate([sorted_vecs[0], sorted_vecs_r[0]], axis=2)
             return eigs_out, vecs_out
@@ -493,7 +539,9 @@ class Media:
             vecs_out = np.concatenate([sorted_vecs[0], sorted_vecs_r[0]], axis=2)
             return eigs_out, vecs_out
 
-    def pol_comp(self, eigs, vecs):
+    def polarisation_comparison(
+        self, eigs: np.ndarray, vecs: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """ Function to compare the eigenmode polarisation state
         dot dot dot
         """
@@ -520,7 +568,9 @@ class Media:
         return eigs, vecs
 
     # flake8: noqa: C901
-    def field_gen(self, wn, ang=None, kx=None):
+    def field_generator(
+        self, wavenumber: np.ndarray, angle: float = None, wavevector: np.ndarray = None
+    ) -> np.ndarray:
         """ Takes the eigenvalues and fields calculated for a given layer and finds
         the full vector of fields required to apply the boundary conditions. The
         fields are normalised to the electric field parallel to the interface, for
@@ -532,19 +582,19 @@ class Media:
         Parameters
         ----------
 
-        kx : float or 1d array
+        wavevector : float or 1d array
             contains a range of in-plane wavevectors to probe over
 
-        wn : float or 1d array
+        wavenumber : float or 1d array
             contains a range of frequencies to probe over
 
         eigs : 3d array
             contains eigenvalues outputted from layer_dispersion, corresponding to
-            the frequencies and wavevectors provided in kx, wn
+            the frequencies and wavevectors provided in wavevector, wavenumber
 
         vecs: 3d array
             contains the eigenvectors outputted from layer_dispersion corresponding
-            to the frequencies and wavevectors provided in kx, wn
+            to the frequencies and wavevectors provided in wavevector, wavenumber
 
         material : string
             material to analyze, corresponds to an entry in ...
@@ -554,42 +604,44 @@ class Media:
 
         fields : 3d array
             the full array of fields necessary to solve the boundary matching
-            problem for all kx, wn. Fields are outputted in order H, E, P, X with
+            problem for all wavevector, wavenumber. Fields are outputted in order H, E, P, X with
             Cartesian components for each ordered x, y, z and are normalised as
             described above
         """
 
         # Checks for non-array inputs and converts to numpy arrays
-        if kx and type(kx) != np.ndarray:
-            kx = np.array([kx])
-        if type(wn) != np.ndarray:
-            wn = np.array(wn)
+        if wavevector and type(wavevector) != np.ndarray:
+            wavevector = np.array([wavevector])
+        if type(wavenumber) != np.ndarray:
+            wavenumber = np.array(wavenumber)
 
-        if self._name == "vacuum":
-            vecs = self._vecs[:, :5, :]
+        if self.material == "vacuum":
+            vecs = self.vecs[:, :5, :]
         else:
-            vecs = self._vecs[:, 5:, :]
+            vecs = self.vecs[:, 5:, :]
 
-        eigs = self._eigs
+        eigs = self.eigs
         # Checks for equal length inputs, assumed to correspond to a cut through
-        # (kx, wn) space
-        if ang:
-            kx = np.zeros(1)  # Creates a dummy kx to ease code maintanence below
-            arrays = [(wn), (kx)]
+        # (wavevector, wavenumber) space
+        if angle:
+            wavevector = np.zeros(
+                1
+            )  # Creates a dummy wavevector to ease code maintanence below
+            arrays = [(wavenumber), (wavevector)]
             arr = np.array(list(product(*arrays)))
-            zeta = np.zeros_like(wn)
-            zeta[:] = np.sin(ang)
+            zeta = np.zeros_like(wavenumber)
+            zeta[:] = np.sin(angle)
             vecs = np.expand_dims(vecs, axis=0)
             eigs = np.expand_dims(eigs, axis=0)
             zeta = np.expand_dims(zeta, axis=0)
         else:
-            arrays = [(wn), (kx)]
+            arrays = [(wavenumber), (wavevector)]
             arr = np.array(list(product(*arrays)))
             zeta = arr[:, 1] / arr[:, 0]
             # zeta = np.transpose(zeta.reshape((len(arrays[0]), len(arrays[1]))))
             # Reshape input arrays for calculation
-            # kx = np.transpose(arr[:, 1].reshape((len(arrays[0]), len(arrays[1]))))
-            # wn = np.transpose(arr[:, 0].reshape((len(arrays[0]), len(arrays[1]))))
+            # wavevector = np.transpose(arr[:, 1].reshape((len(arrays[0]), len(arrays[1]))))
+            # wavenumber = np.transpose(arr[:, 0].reshape((len(arrays[0]), len(arrays[1]))))
             vecs = np.expand_dims(vecs, axis=0)
             eigs = np.expand_dims(eigs, axis=0)
             zeta = np.expand_dims(zeta, axis=0)
@@ -603,21 +655,21 @@ class Media:
         Ex0 = vecs[:, :, 0, :]
         Ey0 = vecs[:, :, 1, :]
 
-        if self._beta_l == 1.55:
+        if self.beta_l == 1.55:
 
             zetaf = np.repeat(zeta[:, :, np.newaxis], 2, axis=2)
 
-            field_vec[:, :, :, 0] = -eigs * Ey0 / self._mu[0, 0]
+            field_vec[:, :, :, 0] = -eigs * Ey0 / self.mu[0, 0]
             field_vec[:, :, :, 1] = (
                 Ex0
                 * eigs
-                * self._eps_inf[2, 2]
-                / (zetaf ** 2 - self._eps_inf[2, 2] * self._mu[1, 1])
+                * self.eps_inf[2, 2]
+                / (zetaf ** 2 - self.eps_inf[2, 2] * self.mu[1, 1])
             )
-            field_vec[:, :, :, 2] = zetaf * Ey0 / self._mu[2, 2]
+            field_vec[:, :, :, 2] = zetaf * Ey0 / self.mu[2, 2]
             # Calculates the z-component of the electric field from Eq. in the tex file
             field_vec[:, :, :, 5] = (
-                Ex0 * eigs * zetaf / (zetaf ** 2 - self._eps_inf[2, 2] * self._mu[1, 1])
+                Ex0 * eigs * zetaf / (zetaf ** 2 - self.eps_inf[2, 2] * self.mu[1, 1])
             )
 
         else:
@@ -634,20 +686,20 @@ class Media:
 
             # Calculates the z-component of the electric field from Eq. in the tex file
             field_vec[:, :, :, 5] = (
-                Ex0 * eigs * zetaf + self._alpha[2, 2] * self._mu[1, 1] * Xz0
-            ) / (zetaf ** 2 - self._eps_inf[2, 2] * self._mu[1, 1])
+                Ex0 * eigs * zetaf + self.alpha[2, 2] * self.mu[1, 1] * Xz0
+            ) / (zetaf ** 2 - self.eps_inf[2, 2] * self.mu[1, 1])
 
             # Calculates the x-component of the magnetic field from Eq. in the tex file
-            field_vec[:, :, :, 0] = -eigs * Ey0 / self._mu[0, 0]
+            field_vec[:, :, :, 0] = -eigs * Ey0 / self.mu[0, 0]
 
             # Calculates the y-component of the magnetic field from Eq. in the tex file
             field_vec[:, :, :, 1] = (
-                Ex0 * eigs * self._eps_inf[2, 2]
-                + self._alpha[2, 2] * self._mu[1, 1] * Xz0 * zetaf
-            ) / (zetaf ** 2 - self._eps_inf[2, 2] * self._mu[1, 1])
+                Ex0 * eigs * self.eps_inf[2, 2]
+                + self.alpha[2, 2] * self.mu[1, 1] * Xz0 * zetaf
+            ) / (zetaf ** 2 - self.eps_inf[2, 2] * self.mu[1, 1])
 
             # Calculates the z-component of the magnetic field from Eq. in the tex file
-            field_vec[:, :, :, 2] = zetaf * Ey0 / self._mu[2, 2]
+            field_vec[:, :, :, 2] = zetaf * Ey0 / self.mu[2, 2]
 
             # Calculates the x-component of the polarization field from Eq. in the tex
             field_vec[:, :, :, 6] = -(
@@ -655,24 +707,24 @@ class Media:
                     Ex0
                     * (
                         zetaf ** 2
-                        + self._eps_inf[2, 2] * eigs ** 2
-                        - self._eps_inf[2, 2] * self._mu[1, 1]
+                        + self.eps_inf[2, 2] * eigs ** 2
+                        - self.eps_inf[2, 2] * self.mu[1, 1]
                     )
-                    + self._alpha[2, 2] * self._mu[1, 1] * Xz0 * zetaf * eigs
+                    + self.alpha[2, 2] * self.mu[1, 1] * Xz0 * zetaf * eigs
                 )
-                / (zetaf ** 2 - self._eps_inf[2, 2] * self._mu[1, 1])
+                / (zetaf ** 2 - self.eps_inf[2, 2] * self.mu[1, 1])
             )
 
             # Calculates the y-component of the polarization field from Eq. in the tex
             field_vec[:, :, :, 7] = (
-                -(1 - eigs ** 2 / self._mu[0, 0] - zetaf ** 2 / self._mu[2, 2]) * Ey0
+                -(1 - eigs ** 2 / self.mu[0, 0] - zetaf ** 2 / self.mu[2, 2]) * Ey0
             )
 
             # Calculates the z-component of the polarization field from Eq. in the tex
             field_vec[:, :, :, 8] = (
-                Ex0 * zetaf * eigs * (self._eps_inf[2, 2] - 1)
-                + self._alpha[2, 2] * (zetaf ** 2 - self._mu[1, 1]) * Xz0
-            ) / (zetaf ** 2 - self._eps_inf[2, 2] * self._mu[1, 1])
+                Ex0 * zetaf * eigs * (self.eps_inf[2, 2] - 1)
+                + self.alpha[2, 2] * (zetaf ** 2 - self.mu[1, 1]) * Xz0
+            ) / (zetaf ** 2 - self.eps_inf[2, 2] * self.mu[1, 1])
 
         # Compares the value of the x and y electric Fields
         ivec = np.sum(np.sum(np.abs(field_vec[:, :, :, 3]), axis=1), axis=0) > np.sum(
@@ -697,23 +749,25 @@ class Media:
                         field_vec[:, :, idx, :] / field_vec[:, :, idx, 4, None]
                     )
 
-        if ang:
+        if angle:
             return field_vec_o[0]
         else:
             return field_vec_o[0]
 
-    def inter_mat(self, wn, ang=None, kx=None):
+    def interface_matrix(
+        self, wavenumber: np.ndarray, angle: float = None, wavevector: np.ndarray = None
+    ) -> np.ndarray:
         """ Calculates the interface matrix given that layer's eigenvalues
         corresponding to the out-of-plane wavevector and eigenvectors
 
         Parameters
         ----------
 
-        wn : 1d array
+        wavenumber : 1d array
             a 1d array, containing the probing wavenumbers
 
         eigs : array
-            a 2d array of dimensions (len(wn) x 10) where 10 is the number of
+            a 2d array of dimensions (len(wavenumber) x 10) where 10 is the number of
             modes in the problem. This corresponds to the out of plane wavevector
             divided by the wavenumber
 
@@ -724,65 +778,62 @@ class Media:
         Returns
         -------
 
-        inter_mat : array
-            a matrix of size (len(wn)x10x10) containing the propagation factors for
+        interface_matrix : array
+            a matrix of size (len(wavenumber)x10x10) containing the propagation factors for
             each eigenmode
         """
         # Checks for non-array inputs and converts to numpy arrays
-        if kx and type(kx) != np.ndarray:
-            kx = np.array([kx])
-        if type(wn) != np.ndarray:
-            wn = np.array(wn)
+        if wavevector and type(wavevector) != np.ndarray:
+            wavevector = np.array([wavevector])
+        if type(wavenumber) != np.ndarray:
+            wavenumber = np.array(wavenumber)
 
         # Checks for an input angle, if present calculates zeta using this else
         # uses the input wavevector array
-        if ang:
-            zeta = np.zeros_like(wn)
-            zeta[:] = np.sin(ang)
+        if angle:
+            zeta = np.zeros_like(wavenumber)
+            zeta[:] = np.sin(angle)
         else:
-            arrays = [(wn), (kx)]
+            arrays = [(wavenumber), (wavevector)]
             arr = np.array(list(product(*arrays)))
             zeta = arr[:, 1] / arr[:, 0]
 
-        inter_mat = np.zeros((len(wn), 10, 10), dtype=complex)
+        interface_matrix = np.zeros((len(wavenumber), 10, 10), dtype=complex)
 
         # In-plane electric field (x)
-        inter_mat[:, 0, :] = self._fields[:, :, 3]
+        interface_matrix[:, 0, :] = self.fields[:, :, 3]
         # In-plane electric field (y)
-        inter_mat[:, 1, :] = self._fields[:, :, 4]
+        interface_matrix[:, 1, :] = self.fields[:, :, 4]
 
         # In-plane magnetic field (x)
-        inter_mat[:, 2, :] = self._fields[:, :, 0]
+        interface_matrix[:, 2, :] = self.fields[:, :, 0]
         # In-plane magnetic field (y)
-        inter_mat[:, 3, :] = self._fields[:, :, 1]
+        interface_matrix[:, 3, :] = self.fields[:, :, 1]
 
         # In-plane ionic displacement field (x)
-        inter_mat[:, 4, :] = self._fields[:, :, 9]
+        interface_matrix[:, 4, :] = self.fields[:, :, 9]
         # In-plane ionic displacement ield (y)
-        inter_mat[:, 5, :] = self._fields[:, :, 10]
+        interface_matrix[:, 5, :] = self.fields[:, :, 10]
         #  In-plane ionic displacement field (y)
-        inter_mat[:, 6, :] = self._fields[:, :, 11]
+        interface_matrix[:, 6, :] = self.fields[:, :, 11]
 
         # In-plane stress tensor (x)
-        inter_mat[:, 7, :] = (
+        interface_matrix[:, 7, :] = (
             0.5
-            * self._beta_c ** 2
-            * (
-                self._eigs * self._fields[:, :, 9]
-                + zeta[:, None] * self._fields[:, :, 11]
-            )
+            * self.beta_c ** 2
+            * (self.eigs * self.fields[:, :, 9] + zeta[:, None] * self.fields[:, :, 11])
         )
 
         # In-plane stress tensor (y)
-        inter_mat[:, 8, :] = (
-            0.5 * self._beta_c ** 2 * (self._eigs * self._fields[:, :, 10])
+        interface_matrix[:, 8, :] = (
+            0.5 * self.beta_c ** 2 * (self.eigs * self.fields[:, :, 10])
         )
 
         # In-plane stress tensor (z)
-        inter_mat[:, 9, :] = +0.5 * self._beta_l ** 2 * self._eigs * self._fields[
+        interface_matrix[:, 9, :] = +0.5 * self.beta_l ** 2 * self.eigs * self.fields[
             :, :, 11
-        ] + (self._beta_l ** 2 - 2 * self._beta_t ** 2) * (
-            zeta[:, None] * self._fields[:, :, 9]
+        ] + (self.beta_l ** 2 - 2 * self.beta_t ** 2) * (
+            zeta[:, None] * self.fields[:, :, 9]
         )
 
-        return inter_mat
+        return interface_matrix
