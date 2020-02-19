@@ -1,0 +1,12 @@
+.DS_Store
+.nox
+.flake8
+.coverage
+.pre-commit-config.yaml
+.python-version
+__pycache__/noxfile.cpython-37.pyc
+tests/__pycache__
+examples/.ipynb_checkpoints/
+mypy.ini
+src/nonlocal_smms.egg-info/
+src/nonlocal_smms/__pycache__
