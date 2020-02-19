@@ -3,12 +3,14 @@
 __all__ = ["scattering_matrix"]
 
 import os
+from itertools import product
 from typing import Tuple
 
 from tinydb import TinyDB, Query
 import numpy as np
 from nonlocal_smms.materials import Media
 from nonlocal_smms.helper import Rdu, Rud, Tdd, Tuu
+
 
 # flake8: noqa: C901
 def scattering_matrix(
@@ -20,7 +22,7 @@ def scattering_matrix(
     locality: str = "nonlocal",
     parameters: dict = None,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """Calculates the scattering matrix as presented in the paper arXiv...
+    """Calculates the scattering matrix as presented in the paper arXiv.
 
     Args:
         wavenumber (np.ndarray): Input wavenumbers in inverse centimetres
@@ -31,7 +33,7 @@ def scattering_matrix(
         angle (float, optional): Incident angle in degrees, defaults to None.
         wavevector (np.ndarray, optional): Incident wavevectors in inverse centimetre,
             defaults to None.
-        locality (string, optional): Whether to do a local calculation or not, defaults
+        locality (str, optional): Whether to do a local calculation or not, defaults
             to 'nonlocal' meaning a nonlocal calculation is carried out
         parameters (dict, optional): Parameters to overwrite the default values in the
             material library, defaults to none
@@ -83,7 +85,7 @@ def scattering_matrix(
             material_data[mat] = Media(
                 mat, properties, wavenumber, angle=angle, orientation=orientation
             )
-        elif wavevector:
+        elif wavevector is not None:
             material_data[mat] = Media(
                 mat,
                 properties,
@@ -102,24 +104,25 @@ def scattering_matrix(
 
     dim = S.shape[2] // 2  # Calculates the dimension of the 4 block matrices
 
-    # creates placeholders for the intermediate objects
-    if return_inter:
-        tlen = S.shape[1]
-        nlay = len(heterostructure)
-        Rud_ret = np.zeros((nlay, tlen, dim, dim), dtype=complex)
-        Tdd_ret = np.zeros((nlay, tlen, dim, dim), dtype=complex)
-        Tuu_ret = np.zeros((nlay, tlen, dim, dim), dtype=complex)
-        Rdu_ret = np.zeros((nlay, tlen, dim, dim), dtype=complex)
+    if angle:
+        zeta = np.zeros_like(wavenumber)
+        zeta[:] = np.sin(angle)
+        wavenumber_p = wavenumber
+    else:
+        arrays = [(wavenumber), (wavevector)]
+        arr = np.array(list(product(*arrays)))
+        zeta = arr[:, 1] / arr[:, 0]
+        wavenumber_p = arr[:, 0] / np.ones_like(arr[:, 1])
 
-        Rud0 = np.zeros((nlay, tlen, dim, dim), dtype=complex)
-        Tdd0 = np.zeros((nlay, tlen, dim, dim), dtype=complex)
-        Tuu0 = np.zeros((nlay, tlen, dim, dim), dtype=complex)
-        Rdu0 = np.zeros((nlay, tlen, dim, dim), dtype=complex)
+    Rud0 = np.zeros((len(zeta), dim, dim), dtype=complex)
+    Tdd0 = np.zeros((len(zeta), dim, dim), dtype=complex)
+    Tuu0 = np.zeros((len(zeta), dim, dim), dtype=complex)
+    Rdu0 = np.zeros((len(zeta), dim, dim), dtype=complex)
 
-        Rud1 = np.zeros((nlay, tlen, dim, dim), dtype=complex)
-        Tdd1 = np.zeros((nlay, tlen, dim, dim), dtype=complex)
-        Tuu1 = np.zeros((nlay, tlen, dim, dim), dtype=complex)
-        Rdu1 = np.zeros((nlay, tlen, dim, dim), dtype=complex)
+    Rud1 = np.zeros((len(zeta), dim, dim), dtype=complex)
+    Tdd1 = np.zeros((len(zeta), dim, dim), dtype=complex)
+    Tuu1 = np.zeros((len(zeta), dim, dim), dtype=complex)
+    Rdu1 = np.zeros((len(zeta), dim, dim), dtype=complex)
 
     # Iterate through the heterostructure object
     for idx, layer in enumerate(heterostructure[:-1]):
@@ -131,11 +134,6 @@ def scattering_matrix(
             Tdd0 = S[0, :, dim:, dim:]
             Rdu0 = S[0, :, dim:, :dim]
             Tuu0 = S[0, :, :dim:, :dim]
-            if return_inter:
-                Rud_ret[0, :, :, :] = np.copy(Rud0)
-                Tdd_ret[0, :, :, :] = np.copy(Tdd0)
-                Tuu_ret[0, :, :, :] = np.copy(Tuu0)
-                Rdu_ret[0, :, :, :] = np.copy(Rdu0)
         else:
             Rud0, Rdu0, Tdd0, Tuu0 = Rud1, Rdu1, Tdd1, Tuu1
 
@@ -155,6 +153,10 @@ def scattering_matrix(
         """
         materialn = material_data[heterostructure[idx + 1][0]]
         imatn = materialn.imat
+        if not angle:
+            eigsm = np.reshape(eigsm, (len(zeta), 10), order="F")
+            imatm = np.reshape(imatm, (len(zeta), 10, 10), order="F")
+            imatn = np.reshape(imatn, (len(zeta), 10, 10), order="F")
 
         # If doing a local calculation, discard the nonlocal modes
         if locality == "local":
@@ -163,10 +165,18 @@ def scattering_matrix(
             imatn = np.concatenate([imatn[:, :4, :2], imatn[:, :4, 5:7]], axis=2)
 
         # Calculate the scattering matrices
-        Rud1 = Rud(wavenumber, eigsm, Tdd0, Rud0, Rdu0, Tuu0, imatm, imatn, thickness)
-        Tdd1 = Tdd(wavenumber, eigsm, Tdd0, Rud0, Rdu0, Tuu0, imatm, imatn, thickness)
-        Rdu1 = Rdu(wavenumber, eigsm, Tdd0, Rud0, Rdu0, Tuu0, imatm, imatn, thickness)
-        Tuu1 = Tuu(wavenumber, eigsm, Tdd0, Rud0, Rdu0, Tuu0, imatm, imatn, thickness)
+        Rud1 = Rud(wavenumber_p, eigsm, Tdd0, Rud0, Rdu0, Tuu0, imatm, imatn, thickness)
+        Tdd1 = Tdd(wavenumber_p, eigsm, Tdd0, Rud0, Rdu0, Tuu0, imatm, imatn, thickness)
+        Rdu1 = Rdu(wavenumber_p, eigsm, Tdd0, Rud0, Rdu0, Tuu0, imatm, imatn, thickness)
+        Tuu1 = Tuu(wavenumber_p, eigsm, Tdd0, Rud0, Rdu0, Tuu0, imatm, imatn, thickness)
 
     output = Rdu1[:, 0, 0], Rdu1[:, 1, 1]
-    return output
+    if angle:
+        return output
+    else:
+        outer = list()
+        for o in output:
+            temp = np.reshape(o, (len(wavevector), len(wavenumber)), order="F")
+            outer.append(temp)
+
+        return outer[0], outer[1]

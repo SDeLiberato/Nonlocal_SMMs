@@ -58,7 +58,7 @@ class Media:
             material (str): The name of the material comprising the layer
             properties (dict): Containing the material properties
             wavenumber (np.ndarray): The probe frequencies in inverse centimetres
-            angle (float, optional): The incident angle in radians
+            angle (float, optional): The incident angle in degrees
             wavevector (np.ndarray, optional): The incident in-plane wavevector in
                 inverse centimetres. Either an angle or an incident wavevector must
                 be passed.
@@ -98,7 +98,7 @@ class Media:
 
             self.fields = self.field_generator(wavenumber, angle=angle)
             self.imat = self.interface_matrix(wavenumber, angle=angle)
-        elif wavevector:
+        elif wavevector is not None:
             self.wavevector = wavevector
             self.eigs, self.vecs = self.layer_dispersion(
                 wavenumber, wavevector=wavevector
@@ -221,7 +221,7 @@ class Media:
 
         Args:
             wavenumber (np.ndarray): The probe frequencies in inverse centimetres
-            angle (float, optional): The incident angle in radians, optional defaults to None
+            angle (float, optional): The incident angle in degrees, optional defaults to None
             wavevector (np.ndarray, optional): The probe in-plane wavevectors in inverse
                 centimetres. This defaults to 1
 
@@ -232,7 +232,7 @@ class Media:
 
         """
         # Checks for non-array inputs and converts to numpy arrays
-        if wavevector and type(wavevector) != np.ndarray:
+        if (wavevector is not None) and type(wavevector) != np.ndarray:
             wavevector = np.array([wavevector])
         if type(wavenumber) != np.ndarray:
             wavenumber = np.array(wavenumber)
@@ -257,11 +257,9 @@ class Media:
             It = np.identity(2)
             It = np.swapaxes(np.broadcast_to(It[..., None], (2, 2, len(zeta))), 0, 2)
             # Creates an array of len(zeta) 5 x 5 null matrices
-
             tAit = np.zeros_like(It, dtype=complex)
             tAit[:, 0, 0] = zeta ** 2 / self.eps_inf[2, 2] - self.mu[1, 1]
             tAit[:, 1, 1] = -self.mu[0, 0]
-
             tCt = np.zeros_like(It, dtype=complex)
             tCt[:, 0, 0] = self.eps_inf[0, 0]
             tCt[:, 1, 1] = self.eps_inf[1, 1] - zeta ** 2 / self.mu[2, 2]
@@ -269,7 +267,7 @@ class Media:
             fm = np.matmul(tAit, tCt)
 
             sq_eigs, vecs = np.linalg.eig(-fm)
-            eigs = np.sqrt(sq_eigs)
+            eigs = np.sqrt(sq_eigs + 0j)
 
             eigs = eigs.reshape((len(wavevector), len(wavenumber), 2), order="F")
             vecs = vecs.reshape((len(wavevector), len(wavenumber), 2, 2), order="F")
@@ -485,8 +483,9 @@ class Media:
             vecs_out = np.concatenate([sorted_vecs[0], sorted_vecs_r[0]], axis=2)
             return eigs_out, vecs_out
         else:
-            eigs_out = np.concatenate([sorted_eigs[0], sorted_eigs_r[0]], axis=1)
-            vecs_out = np.concatenate([sorted_vecs[0], sorted_vecs_r[0]], axis=2)
+            eigs_out = np.concatenate([sorted_eigs, sorted_eigs_r], axis=2)
+            vecs_out = np.concatenate([sorted_vecs, sorted_vecs_r], axis=3)
+
             return eigs_out, vecs_out
 
     def polarisation_comparison(
@@ -541,7 +540,7 @@ class Media:
 
         Args:
             wavenumber (np.ndarray): The probe frequencies in inverse centimetres
-            angle (float, optional): The incident angle in radians, optional defaults to None
+            angle (float, optional): The incident angle in degrees, optional defaults to None
             wavevector (np.ndarray, optional): The probe in-plane wavevectors in inverse
                 centimetres. This defaults to 1
 
@@ -553,15 +552,21 @@ class Media:
 
         """
         # Checks for non-array inputs and converts to numpy arrays
-        if wavevector and type(wavevector) != np.ndarray:
+        if (wavevector is not None) and type(wavevector) != np.ndarray:
             wavevector = np.array([wavevector])
         if type(wavenumber) != np.ndarray:
             wavenumber = np.array(wavenumber)
 
         if self.material == "vacuum":
-            vecs = self.vecs[:, :5, :]
+            if angle:
+                vecs = self.vecs[:, :5, :]
+            else:
+                vecs = self.vecs[:, :, :5, :]
         else:
-            vecs = self.vecs[:, 5:, :]
+            if angle:
+                vecs = self.vecs[:, 5:, :]
+            else:
+                vecs = self.vecs[:, :, 5:, :]
 
         eigs = self.eigs
         # Checks for equal length inputs, assumed to correspond to a cut through
@@ -585,9 +590,10 @@ class Media:
             # Reshape input arrays for calculation
             # wavevector = np.transpose(arr[:, 1].reshape((len(arrays[0]), len(arrays[1]))))
             # wavenumber = np.transpose(arr[:, 0].reshape((len(arrays[0]), len(arrays[1]))))
-            vecs = np.expand_dims(vecs, axis=0)
-            eigs = np.expand_dims(eigs, axis=0)
-            zeta = np.expand_dims(zeta, axis=0)
+            # vecs = np.expand_dims(vecs, axis=0)
+            # eigs = np.expand_dims(eigs, axis=0)
+            # zeta = np.expand_dims(zeta, axis=0)
+
         # Initialize empty output vector
         field_vec = np.zeros((len(arrays[1]), len(arrays[0]), 10, 12), dtype=complex)
 
@@ -598,9 +604,14 @@ class Media:
         Ex0 = vecs[:, :, 0, :]
         Ey0 = vecs[:, :, 1, :]
 
-        if self.beta_l == 1.55:
+        if self.material == "vacuum":
 
-            zetaf = np.repeat(zeta[:, :, np.newaxis], 2, axis=2)
+            # Broadcast zeta to the leading dimensions of the other arrays
+            if angle:
+                zetaf = np.repeat(zeta[:, :, np.newaxis], 10, axis=2)
+            else:
+                zetaf = np.reshape(zeta, (len(wavevector), len(wavenumber)), order="F")
+                zetaf = np.repeat(zetaf[:, :, np.newaxis], 10, axis=2)
 
             field_vec[:, :, :, 0] = -eigs * Ey0 / self.mu[0, 0]
             field_vec[:, :, :, 1] = (
@@ -621,7 +632,11 @@ class Media:
             field_vec[:, :, :, 11] = -vecs[:, :, 4, :]
 
             # Broadcast zeta to the leading dimensions of the other arrays
-            zetaf = np.repeat(zeta[:, :, np.newaxis], 10, axis=2)
+            if angle:
+                zetaf = np.repeat(zeta[:, :, np.newaxis], 10, axis=2)
+            else:
+                zetaf = np.reshape(zeta, (len(wavevector), len(wavenumber)), order="F")
+                zetaf = np.repeat(zetaf[:, :, np.newaxis], 10, axis=2)
 
             # Xx0 = vecs[:, :, 2, :]
             # Xy0 = vecs[:, :, 3, :]
@@ -692,10 +707,7 @@ class Media:
                         field_vec[:, :, idx, :] / field_vec[:, :, idx, 4, None]
                     )
 
-        if angle:
-            return field_vec_o[0]
-        else:
-            return field_vec_o[0]
+        return field_vec_o
 
     def interface_matrix(
         self, wavenumber: np.ndarray, angle: float = None, wavevector: np.ndarray = None
@@ -726,7 +738,7 @@ class Media:
             each eigenmode
         """
         # Checks for non-array inputs and converts to numpy arrays
-        if wavevector and type(wavevector) != np.ndarray:
+        if (wavevector is not None) and type(wavevector) != np.ndarray:
             wavevector = np.array([wavevector])
         if type(wavenumber) != np.ndarray:
             wavenumber = np.array(wavenumber)
@@ -736,47 +748,57 @@ class Media:
         if angle:
             zeta = np.zeros_like(wavenumber)
             zeta[:] = np.sin(angle)
+            interface_matrix = np.zeros((1, len(wavenumber), 10, 10), dtype=complex)
+            zeta = zeta[np.newaxis, :, np.newaxis]
         else:
             arrays = [(wavenumber), (wavevector)]
             arr = np.array(list(product(*arrays)))
             zeta = arr[:, 1] / arr[:, 0]
-
-        interface_matrix = np.zeros((len(wavenumber), 10, 10), dtype=complex)
+            zeta = np.reshape(zeta, (len(wavevector), len(wavenumber)), order="F")
+            interface_matrix = np.zeros(
+                (len(wavevector), len(wavenumber), 10, 10), dtype=complex
+            )
+            zeta = zeta[:, :, np.newaxis]
 
         # In-plane electric field (x)
-        interface_matrix[:, 0, :] = self.fields[:, :, 3]
+        interface_matrix[:, :, 0, :] = self.fields[:, :, :, 3]
         # In-plane electric field (y)
-        interface_matrix[:, 1, :] = self.fields[:, :, 4]
+        interface_matrix[:, :, 1, :] = self.fields[:, :, :, 4]
 
         # In-plane magnetic field (x)
-        interface_matrix[:, 2, :] = self.fields[:, :, 0]
+        interface_matrix[:, :, 2, :] = self.fields[:, :, :, 0]
         # In-plane magnetic field (y)
-        interface_matrix[:, 3, :] = self.fields[:, :, 1]
+        interface_matrix[:, :, 3, :] = self.fields[:, :, :, 1]
 
         # In-plane ionic displacement field (x)
-        interface_matrix[:, 4, :] = self.fields[:, :, 9]
+        interface_matrix[:, :, 4, :] = self.fields[:, :, :, 9]
         # In-plane ionic displacement ield (y)
-        interface_matrix[:, 5, :] = self.fields[:, :, 10]
+        interface_matrix[:, :, 5, :] = self.fields[:, :, :, 10]
         #  In-plane ionic displacement field (y)
-        interface_matrix[:, 6, :] = self.fields[:, :, 11]
+        interface_matrix[:, :, 6, :] = self.fields[:, :, :, 11]
 
         # In-plane stress tensor (x)
-        interface_matrix[:, 7, :] = (
+        interface_matrix[:, :, 7, :] = (
             0.5
             * self.beta_c ** 2
-            * (self.eigs * self.fields[:, :, 9] + zeta[:, None] * self.fields[:, :, 11])
+            * (self.eigs * self.fields[:, :, :, 9] + zeta * self.fields[:, :, :, 11])
         )
 
         # In-plane stress tensor (y)
-        interface_matrix[:, 8, :] = (
-            0.5 * self.beta_c ** 2 * (self.eigs * self.fields[:, :, 10])
+        interface_matrix[:, :, 8, :] = (
+            0.5 * self.beta_c ** 2 * (self.eigs * self.fields[:, :, :, 10])
         )
 
         # In-plane stress tensor (z)
-        interface_matrix[:, 9, :] = +0.5 * self.beta_l ** 2 * self.eigs * self.fields[
-            :, :, 11
-        ] + (self.beta_l ** 2 - 2 * self.beta_t ** 2) * (
-            zeta[:, None] * self.fields[:, :, 9]
+        interface_matrix[
+            :, :, 9, :
+        ] = +0.5 * self.beta_l ** 2 * self.eigs * self.fields[:, :, :, 11] + (
+            self.beta_l ** 2 - 2 * self.beta_t ** 2
+        ) * (
+            zeta * self.fields[:, :, :, 9]
         )
 
-        return interface_matrix
+        if angle:
+            return interface_matrix[0]
+        else:
+            return interface_matrix
