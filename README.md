@@ -23,13 +23,18 @@ To create a simple heterostructure such as the nitride stack studied in the acco
 
 ``` python
 from nonlocal_smms.core import scattering_matrix
+
 angle = 75  # Incident angle in degrees
 wavenumbers = [x for x in range(750, 1050)]  # Sets a wavenumber range to probe
 thickness = 1e-9  # Set the layer thickness
 repetitions = 50  # Set the sublattice repeats
+
+# Construct the heterostructure
 sublattice = [['AlN', thickness], ['GaN', thickness]]  # Define the superlattice cell
 superlattice = sublattice * repetitions
 superlattice.insert(0, ['vacuum', 0])
 superlattice.insert(len(superlattice), ['SiC4H', 0])
+
+# Calculate the reflectance
 rte, rtm = scattering_matrix(wavenumbers, superlattice, angle=angle)
 ```
