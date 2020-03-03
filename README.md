@@ -38,3 +38,27 @@ superlattice.insert(len(superlattice), ['SiC4H', 0])
 # Calculate the reflectance
 rte, rtm = scattering_matrix(wavenumbers, superlattice, angle=angle)
 ```
+
+# Adding a Material to the Database
+
+To add a material to the database follow this template:
+
+```python
+from tinydb import TinyDB, Query
+
+# Import the material database, you will need to change the import path depending
+# on where you run the script
+material_db = TinyDB(".../materials.json")
+
+# Create a new material, in this case 3C-SiC. Note that frequencies are provided in wavenumbers
+# while velocities (beta_) are provided in unitless form. They are the physical phonon velocity
+# divided by the speed of light in vacuum.
+new_material = {
+  "beta_l": 3e-05, "beta_t": 3e-05, "beta_c": 5e-05, "rho": 3.21, "eps_inf_pa": 6.52,
+  "eps_inf_pe": 6.52, "eps_0_pa": 9.7, "eps_0_pe": 9.7, "wto_pa": 797.4, "wto_pe": 797.5,
+  "gamma": 4, "wlo_pa": 972.69, "wlo_pe": 972.7, "material": "SiC3C"
+}
+
+# Insert the new material into the database, automatically writing to file
+material_db.insert(new_material)
+```
