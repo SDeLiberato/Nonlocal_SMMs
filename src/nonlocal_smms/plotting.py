@@ -3,10 +3,13 @@
 
 __all__ = ["RefPlot"]
 
-from typing import Any
+from typing import Any, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
+
+from matplotlib.colors import ListedColormap
 
 # flake8: noqa: W605
 def RefPlot(
@@ -49,3 +52,19 @@ def RefPlot(
         cax = fig.add_axes([0.95, 0.15, 0.01, 0.7])
         cbar = fig.colorbar(im, cax=cax, orientation="vertical")
         cbar.ax.set_ylabel("Reflectivity")
+
+
+def color_map(
+        x_values: np.ndarray, y_values: np.ndarray, z_values: np.ndarray,
+        ax: Any, lims: Tuple[float, float] = None
+) -> None:
+
+    X, Y = np.meshgrid(x_values, y_values)
+
+    if lims:
+        v_min, v_max = lims
+    else:
+        v_min, v_max = None, None
+
+    co_map = ListedColormap(sns.color_palette("BuGn_r").as_hex())
+    ax.contourf(X, Y, z_values.T, 100, vmin=v_min, vmax=v_max, cmap='plasma')#, cmap=co_map)
