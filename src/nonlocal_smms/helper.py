@@ -74,7 +74,6 @@ def Rdu(
         return rdut
     else:
         rdut = s[:, dim:, :dim]
-        print("bell")
 
         idenmat = np.zeros((len(wavenumber), dim, dim))
         idenmat[:] = np.identity(dim)
