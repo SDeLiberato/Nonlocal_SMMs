@@ -134,6 +134,13 @@ def scattering_matrix(
             Tdd0 = S[0, :, dim:, dim:]
             Rdu0 = S[0, :, dim:, :dim]
             Tuu0 = S[0, :, :dim:, :dim]
+
+            # applying proper exterior conditions, top layer is local
+            # so no nonlocal fields are transmitted through the boundary
+            if locality == "nonlocal":
+                Tdd0[:, 2, 2] = 0
+                Tdd0[:, 3, 3] = 0
+                Tdd0[:, 4, 4] = 0
         else:
             Rud0, Rdu0, Tdd0, Tuu0 = Rud1, Rdu1, Tdd1, Tuu1
 
