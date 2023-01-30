@@ -55,8 +55,11 @@ def RefPlot(
 
 
 def color_map(
-        x_values: np.ndarray, y_values: np.ndarray, z_values: np.ndarray,
-        ax: Any, lims: Tuple[float, float] = None
+    x_values: np.ndarray,
+    y_values: np.ndarray,
+    z_values: np.ndarray,
+    ax: Any,
+    lims: Tuple[float, float] = None,
 ) -> None:
 
     X, Y = np.meshgrid(x_values, y_values)
@@ -67,4 +70,6 @@ def color_map(
         v_min, v_max = None, None
 
     co_map = ListedColormap(sns.color_palette("BuGn_r").as_hex())
-    ax.contourf(X, Y, z_values.T, 100, vmin=v_min, vmax=v_max, cmap='plasma')#, cmap=co_map)
+    ax.contourf(
+        X, Y, z_values.T, 100, vmin=v_min, vmax=v_max, cmap="plasma"
+    )  # , cmap=co_map)

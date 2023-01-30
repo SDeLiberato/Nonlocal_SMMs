@@ -393,7 +393,10 @@ def propagation_matrices(
     return propmat1, propmat2
 
 
-def interfacial_matrix(ia: np.ndarray, ib: np.ndarray,) -> np.ndarray:
+def interfacial_matrix(
+    ia: np.ndarray,
+    ib: np.ndarray,
+) -> np.ndarray:
     """Calculates the interfacial matrix.
 
     For two layers with individual interface matrices ia and ib returns the interface
