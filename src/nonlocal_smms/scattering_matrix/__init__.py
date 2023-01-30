@@ -1,0 +1,1 @@
+"""Core scattering matrix algorithm."""

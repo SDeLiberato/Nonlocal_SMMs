@@ -1,0 +1,13 @@
+name: nonlocal_smms
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.10
+  - mamba
+  - poetry=1.*
+  - pip
+  - pip:
+    - nox
+    - nox-poetry
+    - pre-commit
