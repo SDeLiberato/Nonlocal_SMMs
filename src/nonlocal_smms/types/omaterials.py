@@ -148,8 +148,8 @@ class Media:
 
         eps = (
             eps_inf
-            * (wlo ** 2 - wavenumber * (wavenumber + 1j * gam))
-            / (wto ** 2 - wavenumber * (wavenumber + 1j * gam))
+            * (wlo**2 - wavenumber * (wavenumber + 1j * gam))
+            / (wto**2 - wavenumber * (wavenumber + 1j * gam))
         )
 
         return eps
@@ -258,11 +258,11 @@ class Media:
             It = np.swapaxes(np.broadcast_to(It[..., None], (2, 2, len(zeta))), 0, 2)
             # Creates an array of len(zeta) 5 x 5 null matrices
             tAit = np.zeros_like(It, dtype=complex)
-            tAit[:, 0, 0] = zeta ** 2 / self.eps_inf[2, 2] - self.mu[1, 1]
+            tAit[:, 0, 0] = zeta**2 / self.eps_inf[2, 2] - self.mu[1, 1]
             tAit[:, 1, 1] = -self.mu[0, 0]
             tCt = np.zeros_like(It, dtype=complex)
             tCt[:, 0, 0] = self.eps_inf[0, 0]
-            tCt[:, 1, 1] = self.eps_inf[1, 1] - zeta ** 2 / self.mu[2, 2]
+            tCt[:, 1, 1] = self.eps_inf[1, 1] - zeta**2 / self.mu[2, 2]
 
             fm = np.matmul(tAit, tCt)
 
@@ -305,50 +305,50 @@ class Media:
             tBt = np.zeros_like(It, dtype=complex)
 
             tAt[:, 0, 0] = self.eps_inf[0, 0] * (
-                -(zeta ** 2) / self.eps_inf[2, 2] + self.mu[1, 1]
+                -(zeta**2) / self.eps_inf[2, 2] + self.mu[1, 1]
             )
             tAt[:, 0, 2] = self.alpha[0, 0] * (
-                -(zeta ** 2) / self.eps_inf[2, 2] + self.mu[1, 1]
+                -(zeta**2) / self.eps_inf[2, 2] + self.mu[1, 1]
             )
 
             tAt[:, 1, 1] = self.mu[0, 0] * (
-                -(zeta ** 2) / self.mu[2, 2] + self.eps_inf[1, 1]
+                -(zeta**2) / self.mu[2, 2] + self.eps_inf[1, 1]
             )
             tAt[:, 1, 3] = self.alpha[1, 1] * self.mu[0, 0]
 
-            tAt[:, 2, 0] = -2 * self.alpha[0, 0] / arr[:, 0] ** 2 / self.beta_c ** 2
+            tAt[:, 2, 0] = -2 * self.alpha[0, 0] / arr[:, 0] ** 2 / self.beta_c**2
             tAt[:, 2, 2] = (
                 2
                 * (
-                    self.wto_pe ** 2
+                    self.wto_pe**2
                     - arr[:, 0] * (arr[:, 0] + 1j * self.gamma)
-                    - self.beta_l ** 2 * zeta ** 2 * arr[:, 0] ** 2
+                    - self.beta_l**2 * zeta**2 * arr[:, 0] ** 2
                 )
                 / arr[:, 0] ** 2
-                / self.beta_c ** 2
+                / self.beta_c**2
             )
-            tAt[:, 3, 1] = -2 * self.alpha[1, 1] / arr[:, 0] ** 2 / self.beta_c ** 2
+            tAt[:, 3, 1] = -2 * self.alpha[1, 1] / arr[:, 0] ** 2 / self.beta_c**2
             tAt[:, 3, 3] = (
                 2
                 * (
-                    self.wto_pe ** 2
+                    self.wto_pe**2
                     - arr[:, 0] * (arr[:, 0] + 1j * self.gamma)
-                    - 0.5 * self.beta_c ** 2 * zeta ** 2 * arr[:, 0] ** 2
+                    - 0.5 * self.beta_c**2 * zeta**2 * arr[:, 0] ** 2
                 )
                 / arr[:, 0] ** 2
-                / self.beta_c ** 2
+                / self.beta_c**2
             )
 
             tAt[:, 4, 4] = (
-                self.wto_pa ** 2
+                self.wto_pa**2
                 - arr[:, 0] * (arr[:, 0] + 1j * self.gamma)
-                - 0.5 * self.beta_c ** 2 * zeta ** 2 * arr[:, 0] ** 2
-            ) / arr[:, 0] ** 2 / self.beta_l ** 2 - (
+                - 0.5 * self.beta_c**2 * zeta**2 * arr[:, 0] ** 2
+            ) / arr[:, 0] ** 2 / self.beta_l**2 - (
                 self.alpha[2, 2] ** 2
                 * self.mu[1, 1]
                 / arr[:, 0] ** 2
-                / self.beta_l ** 2
-                / (zeta ** 2 - self.eps_inf[2, 2] * self.mu[1, 1])
+                / self.beta_l**2
+                / (zeta**2 - self.eps_inf[2, 2] * self.mu[1, 1])
             )
 
             tBt[:, 0, 4] = -zeta * self.alpha[2, 2] / self.eps_inf[2, 2]
@@ -356,25 +356,25 @@ class Media:
             tBt[:, 2, 4] = (
                 -2
                 * zeta
-                * (self.beta_c ** 2 / 2 + self.beta_l ** 2 - 2 * self.beta_t ** 2)
-                / self.beta_c ** 2
+                * (self.beta_c**2 / 2 + self.beta_l**2 - 2 * self.beta_t**2)
+                / self.beta_c**2
             )
 
             tBt[:, 4, 0] = (
                 -self.alpha[2, 2]
                 * zeta
                 / (
-                    self.beta_l ** 2
+                    self.beta_l**2
                     * arr[:, 0] ** 2
-                    * (zeta ** 2 - self.eps_inf[2, 2] * self.mu[1, 1])
+                    * (zeta**2 - self.eps_inf[2, 2] * self.mu[1, 1])
                 )
             )
 
             tBt[:, 4, 2] = (
                 -1
                 * zeta
-                * (self.beta_c ** 2 / 2 + self.beta_l ** 2 - 2 * self.beta_t ** 2)
-                / self.beta_l ** 2
+                * (self.beta_c**2 / 2 + self.beta_l**2 - 2 * self.beta_t**2)
+                / self.beta_l**2
             )
 
             M3 = -np.concatenate((np.hstack((Zt, It)), np.hstack((tAt, tBt))), axis=2)
@@ -618,12 +618,12 @@ class Media:
                 Ex0
                 * eigs
                 * self.eps_inf[2, 2]
-                / (zetaf ** 2 - self.eps_inf[2, 2] * self.mu[1, 1])
+                / (zetaf**2 - self.eps_inf[2, 2] * self.mu[1, 1])
             )
             field_vec[:, :, :, 2] = zetaf * Ey0 / self.mu[2, 2]
             # Calculates the z-component of the electric field from Eq. in the tex file
             field_vec[:, :, :, 5] = (
-                Ex0 * eigs * zetaf / (zetaf ** 2 - self.eps_inf[2, 2] * self.mu[1, 1])
+                Ex0 * eigs * zetaf / (zetaf**2 - self.eps_inf[2, 2] * self.mu[1, 1])
             )
 
         else:
@@ -645,7 +645,7 @@ class Media:
             # Calculates the z-component of the electric field from Eq. in the tex file
             field_vec[:, :, :, 5] = (
                 Ex0 * eigs * zetaf + self.alpha[2, 2] * self.mu[1, 1] * Xz0
-            ) / (zetaf ** 2 - self.eps_inf[2, 2] * self.mu[1, 1])
+            ) / (zetaf**2 - self.eps_inf[2, 2] * self.mu[1, 1])
 
             # Calculates the x-component of the magnetic field from Eq. in the tex file
             field_vec[:, :, :, 0] = -eigs * Ey0 / self.mu[0, 0]
@@ -654,7 +654,7 @@ class Media:
             field_vec[:, :, :, 1] = (
                 Ex0 * eigs * self.eps_inf[2, 2]
                 + self.alpha[2, 2] * self.mu[1, 1] * Xz0 * zetaf
-            ) / (zetaf ** 2 - self.eps_inf[2, 2] * self.mu[1, 1])
+            ) / (zetaf**2 - self.eps_inf[2, 2] * self.mu[1, 1])
 
             # Calculates the z-component of the magnetic field from Eq. in the tex file
             field_vec[:, :, :, 2] = zetaf * Ey0 / self.mu[2, 2]
@@ -664,25 +664,25 @@ class Media:
                 (
                     Ex0
                     * (
-                        zetaf ** 2
-                        + self.eps_inf[2, 2] * eigs ** 2
+                        zetaf**2
+                        + self.eps_inf[2, 2] * eigs**2
                         - self.eps_inf[2, 2] * self.mu[1, 1]
                     )
                     + self.alpha[2, 2] * self.mu[1, 1] * Xz0 * zetaf * eigs
                 )
-                / (zetaf ** 2 - self.eps_inf[2, 2] * self.mu[1, 1])
+                / (zetaf**2 - self.eps_inf[2, 2] * self.mu[1, 1])
             )
 
             # Calculates the y-component of the polarization field from Eq. in the tex
             field_vec[:, :, :, 7] = (
-                -(1 - eigs ** 2 / self.mu[0, 0] - zetaf ** 2 / self.mu[2, 2]) * Ey0
+                -(1 - eigs**2 / self.mu[0, 0] - zetaf**2 / self.mu[2, 2]) * Ey0
             )
 
             # Calculates the z-component of the polarization field from Eq. in the tex
             field_vec[:, :, :, 8] = (
                 Ex0 * zetaf * eigs * (self.eps_inf[2, 2] - 1)
-                + self.alpha[2, 2] * (zetaf ** 2 - self.mu[1, 1]) * Xz0
-            ) / (zetaf ** 2 - self.eps_inf[2, 2] * self.mu[1, 1])
+                + self.alpha[2, 2] * (zetaf**2 - self.mu[1, 1]) * Xz0
+            ) / (zetaf**2 - self.eps_inf[2, 2] * self.mu[1, 1])
 
         # Compares the value of the x and y electric Fields
         ivec = np.sum(np.sum(np.abs(field_vec[:, :, :, 3]), axis=1), axis=0) > np.sum(
@@ -712,7 +712,7 @@ class Media:
     def interface_matrix(
         self, wavenumber: np.ndarray, angle: float = None, wavevector: np.ndarray = None
     ) -> np.ndarray:
-        """ Calculates the interface matrix given that layer's eigenvalues
+        """Calculates the interface matrix given that layer's eigenvalues
         corresponding to the out-of-plane wavevector and eigenvectors
 
         Parameters
@@ -780,20 +780,20 @@ class Media:
         # In-plane stress tensor (x)
         interface_matrix[:, :, 7, :] = (
             0.5
-            * self.beta_c ** 2
+            * self.beta_c**2
             * (self.eigs * self.fields[:, :, :, 9] + zeta * self.fields[:, :, :, 11])
         )
 
         # In-plane stress tensor (y)
         interface_matrix[:, :, 8, :] = (
-            0.5 * self.beta_c ** 2 * (self.eigs * self.fields[:, :, :, 10])
+            0.5 * self.beta_c**2 * (self.eigs * self.fields[:, :, :, 10])
         )
 
         # In-plane stress tensor (z)
         interface_matrix[
             :, :, 9, :
-        ] = +0.5 * self.beta_l ** 2 * self.eigs * self.fields[:, :, :, 11] + (
-            self.beta_l ** 2 - 2 * self.beta_t ** 2
+        ] = +0.5 * self.beta_l**2 * self.eigs * self.fields[:, :, :, 11] + (
+            self.beta_l**2 - 2 * self.beta_t**2
         ) * (
             zeta * self.fields[:, :, :, 9]
         )

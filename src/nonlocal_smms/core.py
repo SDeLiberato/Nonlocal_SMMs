@@ -126,9 +126,9 @@ def scattering_matrix(
 
     # Iterate through the heterostructure object
     for idx, layer in enumerate(heterostructure[:-1]):
-        """ In the first layer idx=0 the problem is initialised by Eq. 48.
+        """In the first layer idx=0 the problem is initialised by Eq. 48.
         In other layers, idx>0, the problem is seeded by the result
-        in layer idx-1 """
+        in layer idx-1"""
         if idx == 0:
             Rud0 = S[0, :, :dim, dim:]
             Tdd0 = S[0, :, dim:, dim:]
