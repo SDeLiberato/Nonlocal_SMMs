@@ -95,6 +95,21 @@ class Material:
         result[:, :, :, 2, 2] = 1.0 + 0j
         return result
 
+    def gamma(
+        self, frequency: npt.NDArray[np.float64], zeta: npt.NDArray[np.float64]
+        ) -> npt.NDArray[np.complex128]:
+        """Complex dielectric function with a tensorflow backend.
+
+        This will be implemented directly by child classes.
+
+        Args:
+            frequency (npt.NDArray[np.float64]): Driving frequency in rad / s
+
+        Raises:
+            NotImplementedError: If called from parent directly.
+        """
+        raise NotImplementedError("dielectric function unimplemented")
+
     def is_local(self) -> bool:
         """Query whether the material is local, or nonlocal.
 
@@ -104,9 +119,9 @@ class Material:
         Raises:
             NotImplementedError: If called from the parent class.
         """
-        raise NotImplementedError("dielectric function unimplemented")
+        raise NotImplementedError("locality check not implemented")
 
-    def eigenvalues(
+    def eig(
         self,
         frequency: npt.NDArray[np.float64],
         zeta: npt.NDArray[np.float64]
@@ -131,11 +146,10 @@ class Material:
                         normalised by the free-space wavevector.
         """
         if self.is_local():
-            local_eigenvalues = self.local_eigenvalues(frequency, zeta)
+            local_eigenvalues = self.local_eig(frequency, zeta)
             return self.promote(local_eigenvalues)
         else:
-            return self.nonlocal_eigenvalues(frequency, zeta)
-
+            return self.nonlocal_eig(frequency, zeta)
 
     def local_eigenvalues(
         self,
@@ -166,7 +180,7 @@ class Material:
 
         # An array of V, 1, W 2x2 identity matrices
         identity = np.zeros((V, 1, W, 2, 2), dtype=np.complex128)
-        identity[:, :, :] = np.diag(1, 2, 2)
+        identity[:, :, :] = np.diag(np.ones(2), dtype=np.complex128)
 
         mu = self.relative_permeability(frequency)
         epsilon = self.dielectric_function_tensor(frequency)
@@ -178,10 +192,58 @@ class Material:
         # The non-zero bits of a6n
         a62 = zeta * epsilon[:, :, :, 2, 2] / b
         # The non-zero bits of \Delta
-        Delta_12 = mu[:, :, :, 1, 1] + zeta * a35
-        Delta_21 = epsilon[:, :, :, 0, 0]
-        Delta_34 = mu[:, :, :, 0, 0]
-        Delta_43 = epsilon[:, :, :, 1, 1] - zeta * a62
+        delta_12 = mu[:, :, :, 1, 1] + zeta * a35
+        delta_21 = epsilon[:, :, :, 0, 0]
+        delta_34 = mu[:, :, :, 0, 0]
+        delta_43 = epsilon[:, :, :, 1, 1] - zeta * a62
+
+        delta = np.zeros((V, 1, W, 4, 4), dtype=np.complex128)
+        delta[:, :, :, 0, 1] = delta_12
+        delta[:, :, :, 1, 0] = delta_21
+        delta[:, :, :, 2, 3] = delta_34
+        delta[:, :, :, 3, 2] = delta_43
+
+        return delta
+
+
+    def local_eig(
+        self,
+        frequency: npt.NDArray[np.float64],
+        zeta: npt.NDArray[np.float64]
+        ) -> npt.NDArray[np.complex128]:
+        """Calculates sorted eigenvalues in a local material.
+
+        We assume all materials are diagonal, so the non-zero elements of
+        the matrix Delta (Eq. 8) are only on the diagonal. The eigenvalues returned
+        are sorted as described in doi: 10.1364/JOSAB.34.002128.
+        The method can be extended to full anisotropic materials
+        following 10.1364/JOSAB.34.002128.
+
+        Args:
+            frequency (npt.NDArray[np.float64]): Driving frequency in rad / s
+            zeta (npt.NDArray[np.float64]): Zeta at the driving frequency
+
+        Returns:
+            npt.NDArray[np.complex128]: Sorted eigenfrequencies in the layer.
+             [p-polarized transmitted, s-polarised transmitted,
+                        p-polarized reflected, s-polarised reflected] and are
+                        normalised by the free-space wavevector.
+        """
+
+        eigenmatrix = self.local_eigenmatrix(frequency, zeta)
+
+        eigenvalues, eigenvectors = np.linalg.eig(eigenmatrix)
+
+        ordinary_eigenvalues = ma.masked_array(
+            eigenvalues, mask=(eigenvectors[:, :, :, :, 0] == 0)
+        )
+
+        extraordinary_eigenvalues = ma.masked_array(
+            eigenvalues, mask=(eigenvectors[:, :, :, :, 2] == 0)
+        )
+
+
+
 
         # We can find the eigenvalues analytically
         ordinary_eigenvalue_minus = -np.sqrt(Delta_12) * np.sqrt(Delta_21)
@@ -228,7 +290,7 @@ class Material:
         return values
 
 
-    def nonlocal_eigenvalues(
+    def nonlocal_eig(
         self,
         frequency: npt.NDArray[np.float64],
         zeta: npt.NDArray[np.float64]
@@ -251,37 +313,17 @@ class Material:
                         p-polarized reflected, s-polarised reflected] and are
                         normalised by the free-space wavevector.
         """
+        gamma = self.gamma(frequency, zeta)
+        eigenvalues = np.linalg.eigvals(gamma)
 
-        V = np.shape(frequency)[0]  # We need to unpack separately to
-        W = np.shape(frequency)[2]  # executre without eager
-
-
-        zeros = np.zeros((V, 1, W, 5, 5), dtype=np.complex128)
-        # We have the 4x4 block matrix
-        # [[A, B], [I, 0]]
-        # whose determinant is - Det[B]
-        a = self.a_matrix(frequency, zeta)
-        b = self.b_matrix(frequency, zeta)
-        det_b = np.determinant(b)
-        x = np.concatenate(
-            np.concatenate([c, zeros], axis=3),
-            np.concatenate([zeros, -identity], axis=3),
-            axis=4
-        )
+    def sort_eigenvalues(
+        self,
+        eigenvalues: npt.NDArray[np.complex128]
+        ) -> npt.NDArray[np.complex128]:
 
 
 
 
-        # On the right we have a 2 x 2 block matrix with 5 x 5 blocks
-        identity = np.zeros((V, 1, W, 5, 5), dtype=np.complex128)
-        identity[:, :, :] = np.diag(np.ones(5), dtype=np.complex128)
-        zeros = np.zeros((V, 1, W, 5, 5), dtype=np.complex128)
-        c = self.c_matrix(frequency, zeta)
-        y = np.concatenate(
-            np.concatenate([c, zeros], axis=3),
-            np.concatenate([zeros, -identity], axis=3),
-            axis=4
-        )
 
 
     def promote_eigenvalues(
@@ -301,6 +343,16 @@ class Material:
 
 
 
+      #   # Gamma is a 10x10 Block matrix.
+      #   # The upper left block is the identity matrix (Eq. C36)
+      #   a = np.zeros((V, 1, W, 5, 5), dtype=np.complex128)
+      #   a[:, :, :] = np.diag(np.ones(5), dtype=np.complex128)
+
+      #   # The upper right block is filled with zeros
+      #   b = np.zeros((V, 1, W, 5, 5), dtype=np.complex128)
+
+      #   # The lower left block
+
 
 
 
@@ -318,11 +370,14 @@ class DrudeMaterial(Material):
         epsilon_infinity (float): The dielectric function at infinite frequency.
         longitudinal_frequency (float): Plasma frequency in the medium.
         damping_frequency (float): Damping frequency in the medium.
+        longitudinal_velocity (Optional[float]): Velocity of plasma propagation
+            in m/s
     """
 
     epsilon_infinity: float
     longitudinal_frequency: float
     damping_frequency: float
+    longitudinal_velocity: Optional[float] = None
 
     @property
     def epsilon_infinity(self) -> float:
@@ -399,6 +454,21 @@ class DrudeMaterial(Material):
         return self.epsilon_infinity - self.longitudinal_frequency**2 / frequency / (
             frequency + 1j * self.damping_frequency
         )
+
+    def is_local(self) -> bool:
+        if self.longitudinal_velocity:
+            return True
+        else:
+            return False
+
+    def eigenmatrix(
+            self, frequency: npt.NDArray[np.float64], zeta: npt.NDArray[np.float64]
+        ) -> npt.NDArray[np.complex128]:
+        if self.is_local():
+            return self.local_eigenmatrix(frequency, zeta)
+        else:
+            return self.nonlocal_eigenmatrix(frequency, zeta)
+
 
 @dataclass
 class LorentzMaterial(Material):
